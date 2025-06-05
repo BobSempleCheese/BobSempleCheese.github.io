@@ -3,41 +3,133 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Enigma Machine Simulator</title>
+<title>Enigma Machine Simulator - Encoder & Decoder</title>
 <style>
-  body { font-family: Arial, sans-serif; margin: 20px; max-width: 600px; }
-  label { display: block; margin-top: 15px; }
-  input, textarea { width: 100%; padding: 8px; margin-top: 5px; font-size: 1em; }
-  button { margin-top: 15px; padding: 10px 15px; font-size: 1em; cursor: pointer; }
-  pre { background: #f4f4f4; padding: 10px; margin-top: 10px; white-space: pre-wrap; word-wrap: break-word;}
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box;
+    background: #f9f9f9;
+  }
+  h1 {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  .container {
+    display: flex;
+    max-width: 1000px;
+    margin: 0 auto;
+    height: 600px;
+    border: 1px solid #ccc;
+    background: white;
+  }
+  .panel {
+    flex: 1;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-y: auto;
+  }
+  .separator {
+    width: 2px;
+    background: black;
+  }
+  label {
+    display: block;
+    margin-top: 15px;
+    font-weight: bold;
+  }
+  input, textarea {
+    width: 100%;
+    font-size: 1em;
+    padding: 8px;
+    margin-top: 5px;
+    box-sizing: border-box;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+    resize: vertical;
+  }
+  textarea {
+    min-height: 70px;
+  }
+  button {
+    margin-top: 20px;
+    padding: 10px 15px;
+    font-size: 1em;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    background: #007acc;
+    color: white;
+    transition: background-color 0.3s ease;
+  }
+  button:hover {
+    background: #005fa3;
+  }
+  pre {
+    background: #eee;
+    padding: 10px;
+    margin-top: 15px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    border-radius: 4px;
+    min-height: 50px;
+  }
 </style>
 </head>
 <body>
 
-<h1>Enigma Machine Simulator</h1>
+<h1>Enigma Machine Simulator — Encoder & Decoder</h1>
 
-<label for="message">Message to encode:</label>
-<textarea id="message" rows="3" placeholder="Type your message here..."></textarea>
+<div class="container">
+  <div class="panel" id="encoderPanel">
+    <h2>Encoder</h2>
+    <label for="encodeMessage">Message to encode:</label>
+    <textarea id="encodeMessage" placeholder="Type your message here..."></textarea>
 
-<label for="rotor1">Rotor 1 start position (A-Z):</label>
-<input id="rotor1" maxlength="1" value="A" />
+    <label for="encodeRotor1">Rotor 1 start position (A-Z):</label>
+    <input id="encodeRotor1" maxlength="1" value="A" />
 
-<label for="rotor2">Rotor 2 start position (A-Z):</label>
-<input id="rotor2" maxlength="1" value="A" />
+    <label for="encodeRotor2">Rotor 2 start position (A-Z):</label>
+    <input id="encodeRotor2" maxlength="1" value="A" />
 
-<label for="rotor3">Rotor 3 start position (A-Z):</label>
-<input id="rotor3" maxlength="1" value="A" />
+    <label for="encodeRotor3">Rotor 3 start position (A-Z):</label>
+    <input id="encodeRotor3" maxlength="1" value="A" />
 
-<label for="plugboard">Plugboard pairs (e.g. AB CD EF), optional:</label>
-<input id="plugboard" placeholder="Leave blank for none" />
+    <label for="encodePlugboard">Plugboard pairs (e.g. AB CD EF), optional:</label>
+    <input id="encodePlugboard" placeholder="Leave blank for none" />
 
-<button id="encodeBtn">Encode Message</button>
+    <button id="encodeBtn">Encode Message</button>
 
-<h2>Encoded Message:</h2>
-<pre id="encodedOutput"></pre>
+    <label>Encoded Message:</label>
+    <pre id="encodeOutput"></pre>
+  </div>
 
-<h2>Decoded Message (verification):</h2>
-<pre id="decodedOutput"></pre>
+  <div class="separator"></div>
+
+  <div class="panel" id="decoderPanel">
+    <h2>Decoder</h2>
+    <label for="decodeMessage">Ciphertext to decode:</label>
+    <textarea id="decodeMessage" placeholder="Type ciphertext here..."></textarea>
+
+    <label for="decodeRotor1">Rotor 1 start position (A-Z):</label>
+    <input id="decodeRotor1" maxlength="1" value="A" />
+
+    <label for="decodeRotor2">Rotor 2 start position (A-Z):</label>
+    <input id="decodeRotor2" maxlength="1" value="A" />
+
+    <label for="decodeRotor3">Rotor 3 start position (A-Z):</label>
+    <input id="decodeRotor3" maxlength="1" value="A" />
+
+    <label for="decodePlugboard">Plugboard pairs (e.g. AB CD EF), optional:</label>
+    <input id="decodePlugboard" placeholder="Leave blank for none" />
+
+    <button id="decodeBtn">Decode Message</button>
+
+    <label>Decoded Message:</label>
+    <pre id="decodeOutput"></pre>
+  </div>
+</div>
 
 <script>
 (() => {
@@ -169,38 +261,61 @@
     return ALPHABET.includes(char) ? ALPHABET.indexOf(char) : null;
   }
 
-  // Main handler
-  document.getElementById('encodeBtn').addEventListener('click', () => {
-    const msg = document.getElementById('message').value;
-    const r1 = parseRotorPosition(document.getElementById('rotor1').value);
-    const r2 = parseRotorPosition(document.getElementById('rotor2').value);
-    const r3 = parseRotorPosition(document.getElementById('rotor3').value);
-    const plugStr = document.getElementById('plugboard').value;
+  // Main functions to run encoding or decoding
+  function runEnigma(message, rotor1Pos, rotor2Pos, rotor3Pos, plugboardStr) {
+    const rotor1 = new Rotor(ROTOR_I, NOTCH_I, rotor1Pos);
+    const rotor2 = new Rotor(ROTOR_II, NOTCH_II, rotor2Pos);
+    const rotor3 = new Rotor(ROTOR_III, NOTCH_III, rotor3Pos);
 
-    if (r1 === null || r2 === null || r3 === null) {
-      alert("Please enter valid rotor start positions (A-Z).");
-      return;
-    }
-
-    // Initialize rotors
-    const rotor1 = new Rotor(ROTOR_I, NOTCH_I, r1);
-    const rotor2 = new Rotor(ROTOR_II, NOTCH_II, r2);
-    const rotor3 = new Rotor(ROTOR_III, NOTCH_III, r3);
-
-    const plugboard = createPlugboard(plugStr);
+    const plugboard = createPlugboard(plugboardStr);
 
     const enigma = new EnigmaMachine([rotor1, rotor2, rotor3], REFLECTOR_B, plugboard);
 
-    const encoded = enigma.encodeMessage(msg);
-    document.getElementById('encodedOutput').textContent = encoded;
+    return enigma.encodeMessage(message);
+  }
 
-    // Reset rotor positions for decoding (must re-initialize to original positions)
-    const rotor1Dec = new Rotor(ROTOR_I, NOTCH_I, r1);
-    const rotor2Dec = new Rotor(ROTOR_II, NOTCH_II, r2);
-    const rotor3Dec = new Rotor(ROTOR_III, NOTCH_III, r3);
-    const enigmaDec = new EnigmaMachine([rotor1Dec, rotor2Dec, rotor3Dec], REFLECTOR_B, plugboard);
-    const decoded = enigmaDec.encodeMessage(encoded);
-    document.getElementById('decodedOutput').textContent = decoded;
+  // Encoder button click handler
+  document.getElementById('encodeBtn').addEventListener('click', () => {
+    const msg = document.getElementById('encodeMessage').value;
+    const r1 = parseRotorPosition(document.getElementById('encodeRotor1').value);
+    const r2 = parseRotorPosition(document.getElementById('encodeRotor2').value);
+    const r3 = parseRotorPosition(document.getElementById('encodeRotor3').value);
+    const plugStr = document.getElementById('encodePlugboard').value;
+
+    if (r1 === null || r2 === null || r3 === null) {
+      alert("Please enter valid rotor start positions (A-Z) for Encoder.");
+      return;
+    }
+
+    if (!msg.trim()) {
+      alert("Please enter a message to encode.");
+      return;
+    }
+
+    const encoded = runEnigma(msg, r1, r2, r3, plugStr);
+    document.getElementById('encodeOutput').textContent = encoded;
+  });
+
+  // Decoder button click handler
+  document.getElementById('decodeBtn').addEventListener('click', () => {
+    const msg = document.getElementById('decodeMessage').value;
+    const r1 = parseRotorPosition(document.getElementById('decodeRotor1').value);
+    const r2 = parseRotorPosition(document.getElementById('decodeRotor2').value);
+    const r3 = parseRotorPosition(document.getElementById('decodeRotor3').value);
+    const plugStr = document.getElementById('decodePlugboard').value;
+
+    if (r1 === null || r2 === null || r3 === null) {
+      alert("Please enter valid rotor start positions (A-Z) for Decoder.");
+      return;
+    }
+
+    if (!msg.trim()) {
+      alert("Please enter ciphertext to decode.");
+      return;
+    }
+
+    const decoded = runEnigma(msg, r1, r2, r3, plugStr);
+    document.getElementById('decodeOutput').textContent = decoded;
   });
 })();
 </script>
