@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Enigma Machine Simulator</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; max-width: 600px; }
+  label { display: block; margin-top: 15px; }
+  input, textarea { width: 100%; padding: 8px; margin-top: 5px; font-size: 1em; }
+  button { margin-top: 15px; padding: 10px 15px; font-size: 1em; cursor: pointer; }
+  pre { background: #f4f4f4; padding: 10px; margin-top: 10px; white-space: pre-wrap; word-wrap: break-word;}
+</style>
+</head>
+<body>
+
+<h1>Enigma Machine Simulator</h1>
+
+<label for="message">Message to encode:</label>
+<textarea id="message" rows="3" placeholder="Type your message here..."></textarea>
+
+<label for="rotor1">Rotor 1 start position (A-Z):</label>
+<input id="rotor1" maxlength="1" value="A" />
+
+<label for="rotor2">Rotor 2 start position (A-Z):</label>
+<input id="rotor2" maxlength="1" value="A" />
+
+<label for="rotor3">Rotor 3 start position (A-Z):</label>
+<input id="rotor3" maxlength="1" value="A" />
+
+<label for="plugboard">Plugboard pairs (e.g. AB CD EF), optional:</label>
+<input id="plugboard" placeholder="Leave blank for none" />
+
+<button id="encodeBtn">Encode Message</button>
+
+<h2>Encoded Message:</h2>
+<pre id="encodedOutput"></pre>
+
+<h2>Decoded Message (verification):</h2>
+<pre id="decodedOutput"></pre>
+
+<script>
+(() => {
+  const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+  // Convert wiring string to array of indexes
+  function wiringStrToList(wiringStr) {
+    return wiringStr.split('').map(c => ALPHABET.indexOf(c));
+  }
+
+  // Rotor class
+  class Rotor {
+    constructor(wiring, notch, position = 0) {
+      this.wiring = wiring;
+      this.notch = notch;
+      this.position = position;
+      this.ringSetting = 0; // fixed for simplicity
+    }
+
+    encodeForward(c) {
+      const shiftedPos = (c + this.position - this.ringSetting + 26) % 26;
+      const wiredChar = this.wiring[shiftedPos];
+      const output = (wiredChar - this.position + this.ringSetting + 26) % 26;
+      return output;
+    }
+
+    encodeBackward(c) {
+      const shiftedPos = (c + this.position - this.ringSetting + 26) % 26;
+      const wiredPos = this.wiring.indexOf(shiftedPos);
+      const output = (wiredPos - this.position + this.ringSetting + 26) % 26;
+      return output;
+    }
+
+    step() {
+      this.position = (this.position + 1) % 26;
+      return this.position === this.notch;
+    }
+  }
+
+  // Enigma Machine class
+  class EnigmaMachine {
+    constructor(rotors, reflector, plugboard = {}) {
+      this.rotors = rotors;
+      this.reflector = reflector;
+      this.plugboard = plugboard;
+    }
+
+    encodeChar(char) {
+      if (!ALPHABET.includes(char)) return char;
+
+      let c = ALPHABET.indexOf(char);
+
+      // Step rotors before encoding
+      if (this.rotors[0].step()) {
+        if (this.rotors[1].step()) {
+          this.rotors[2].step();
+        }
+      }
+
+      // Plugboard in
+      c = this.plugboard[c] !== undefined ? this.plugboard[c] : c;
+
+      // Forward through rotors
+      for (const rotor of this.rotors) {
+        c = rotor.encodeForward(c);
+      }
+
+      // Reflector
+      c = this.reflector[c];
+
+      // Backward through rotors
+      for (let i = this.rotors.length - 1; i >= 0; i--) {
+        c = this.rotors[i].encodeBackward(c);
+      }
+
+      // Plugboard out
+      c = this.plugboard[c] !== undefined ? this.plugboard[c] : c;
+
+      return ALPHABET[c];
+    }
+
+    encodeMessage(message) {
+      return message.toUpperCase().split('').map(ch => this.encodeChar(ch)).join('');
+    }
+  }
+
+  // Rotor wirings and notch positions (Enigma I)
+  const ROTOR_I = wiringStrToList("EKMFLGDQVZNTOWYHXUSPAIBRCJ");
+  const ROTOR_II = wiringStrToList("AJDKSIRUXBLHWTMCQGZNPYFVOE");
+  const ROTOR_III = wiringStrToList("BDFHJLCPRTXVZNYEIWGAKMUSQO");
+
+  const NOTCH_I = ALPHABET.indexOf("Q");
+  const NOTCH_II = ALPHABET.indexOf("E");
+  const NOTCH_III = ALPHABET.indexOf("V");
+
+  // Reflector B
+  const REFLECTOR_B_STR = "YRUHQSLDPXNGOKMIEBFZCWVJAT";
+  const REFLECTOR_B = wiringStrToList(REFLECTOR_B_STR);
+
+  // Create plugboard mapping from pairs string (like "AB CD EF")
+  function createPlugboard(pairsStr) {
+    const plugboard = {};
+    if (!pairsStr) return plugboard;
+    const pairs = pairsStr.toUpperCase().trim().split(/\s+/);
+    const usedLetters = new Set();
+
+    for (const pair of pairs) {
+      if (pair.length !== 2) continue;
+      const [a, b] = pair.split('');
+      if (
+        ALPHABET.includes(a) &&
+        ALPHABET.includes(b) &&
+        !usedLetters.has(a) &&
+        !usedLetters.has(b) &&
+        a !== b
+      ) {
+        plugboard[ALPHABET.indexOf(a)] = ALPHABET.indexOf(b);
+        plugboard[ALPHABET.indexOf(b)] = ALPHABET.indexOf(a);
+        usedLetters.add(a);
+        usedLetters.add(b);
+      }
+    }
+    return plugboard;
+  }
+
+  // Helpers to validate rotor start positions
+  function parseRotorPosition(char) {
+    char = char.toUpperCase();
+    return ALPHABET.includes(char) ? ALPHABET.indexOf(char) : null;
+  }
+
+  // Main handler
+  document.getElementById('encodeBtn').addEventListener('click', () => {
+    const msg = document.getElementById('message').value;
+    const r1 = parseRotorPosition(document.getElementById('rotor1').value);
+    const r2 = parseRotorPosition(document.getElementById('rotor2').value);
+    const r3 = parseRotorPosition(document.getElementById('rotor3').value);
+    const plugStr = document.getElementById('plugboard').value;
+
+    if (r1 === null || r2 === null || r3 === null) {
+      alert("Please enter valid rotor start positions (A-Z).");
+      return;
+    }
+
+    // Initialize rotors
+    const rotor1 = new Rotor(ROTOR_I, NOTCH_I, r1);
+    const rotor2 = new Rotor(ROTOR_II, NOTCH_II, r2);
+    const rotor3 = new Rotor(ROTOR_III, NOTCH_III, r3);
+
+    const plugboard = createPlugboard(plugStr);
+
+    const enigma = new EnigmaMachine([rotor1, rotor2, rotor3], REFLECTOR_B, plugboard);
+
+    const encoded = enigma.encodeMessage(msg);
+    document.getElementById('encodedOutput').textContent = encoded;
+
+    // Reset rotor positions for decoding (must re-initialize to original positions)
+    const rotor1Dec = new Rotor(ROTOR_I, NOTCH_I, r1);
+    const rotor2Dec = new Rotor(ROTOR_II, NOTCH_II, r2);
+    const rotor3Dec = new Rotor(ROTOR_III, NOTCH_III, r3);
+    const enigmaDec = new EnigmaMachine([rotor1Dec, rotor2Dec, rotor3Dec], REFLECTOR_B, plugboard);
+    const decoded = enigmaDec.encodeMessage(encoded);
+    document.getElementById('decodedOutput').textContent = decoded;
+  });
+})();
+</script>
+
+</body>
+</html>
