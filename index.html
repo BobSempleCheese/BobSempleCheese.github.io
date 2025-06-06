@@ -1,341 +1,114 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Enigma Machine Simulator - Encoder & Decoder</title>
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 20px;
-    box-sizing: border-box;
-    background: #f9f9f9;
-    nav {
-    background-color: #222;
-    padding: 10px;
-    text-align: center;
-  }
-
-  nav a {
-    color: white;
-    margin: 0 15px;
-    text-decoration: none;
-    font-weight: bold;
-    font-size: 1.1em;
-  }
-
-  nav a:hover {
-    text-decoration: underline;
-  }
-  }
-  h1 {
-    text-align: center;
-    margin-bottom: 30px;
-  }
-  .container {
-    display: flex;
-    max-width: 1000px;
-    margin: 0 auto;
-    height: 600px;
-    border: 1px solid #ccc;
-    background: white;
-  }
-  .panel {
-    flex: 1;
-    padding: 20px;
-    box-sizing: border-box;
-    overflow-y: auto;
-  }
-  .separator {
-    width: 2px;
-    background: black;
-  }
-  label {
-    display: block;
-    margin-top: 15px;
-    font-weight: bold;
-  }
-  input, textarea {
-    width: 100%;
-    font-size: 1em;
-    padding: 8px;
-    margin-top: 5px;
-    box-sizing: border-box;
-    border: 1px solid #aaa;
-    border-radius: 4px;
-    resize: vertical;
-  }
-  textarea {
-    min-height: 70px;
-  }
-  button {
-    margin-top: 20px;
-    padding: 10px 15px;
-    font-size: 1em;
-    cursor: pointer;
-    border: none;
-    border-radius: 5px;
-    background: #007acc;
-    color: white;
-    transition: background-color 0.3s ease;
-  }
-  button:hover {
-    background: #005fa3;
-  }
-  pre {
-    background: #eee;
-    padding: 10px;
-    margin-top: 15px;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    border-radius: 4px;
-    min-height: 50px;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Enigma Simulator</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }
+    textarea, input, button { width: 100%; margin: 10px 0; padding: 8px; }
+    .panel { max-width: 500px; margin: auto; background: #fff; padding: 20px; border-radius: 6px; }
+    pre { background: #eee; padding: 10px; min-height: 40px; }
+  </style>
 </head>
 <body>
-
-<h1>Enigma Machine Simulator — Encoder & Decoder</h1>
-
-<div class="container">
-  <div class="panel" id="encoderPanel">
-    <h2>Encoder</h2>
-    <label for="encodeMessage">Message to encode:</label>
-    <textarea id="encodeMessage" placeholder="Type your message here..."></textarea>
-
-    <label for="encodeRotor1">Rotor 1 start position (A-Z):</label>
-    <input id="encodeRotor1" maxlength="1" value="A" />
-
-    <label for="encodeRotor2">Rotor 2 start position (A-Z):</label>
-    <input id="encodeRotor2" maxlength="1" value="A" />
-
-    <label for="encodeRotor3">Rotor 3 start position (A-Z):</label>
-    <input id="encodeRotor3" maxlength="1" value="A" />
-
-    <label for="encodePlugboard">Plugboard pairs (e.g. AB CD EF), optional:</label>
-    <input id="encodePlugboard" placeholder="Leave blank for none" />
-
-    <button id="encodeBtn">Encode Message</button>
-
-    <label>Encoded Message:</label>
-    <pre id="encodeOutput"></pre>
+  <div class="panel">
+    <h2>Encode / Decode</h2>
+    <textarea id="message" placeholder="Message"></textarea>
+    <input id="r1" maxlength="1" value="A" />
+    <input id="r2" maxlength="1" value="A" />
+    <input id="r3" maxlength="1" value="A" />
+    <input id="plugboard" placeholder="Plugboard pairs (e.g. AB CD)" />
+    <button onclick="process()">Run Enigma</button>
+    <pre id="output"></pre>
   </div>
 
-  <div class="separator"></div>
+  <script>
+    const A = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-  <div class="panel" id="decoderPanel">
-    <h2>Decoder</h2>
-    <label for="decodeMessage">Ciphertext to decode:</label>
-    <textarea id="decodeMessage" placeholder="Type ciphertext here..."></textarea>
-
-    <label for="decodeRotor1">Rotor 1 start position (A-Z):</label>
-    <input id="decodeRotor1" maxlength="1" value="A" />
-
-    <label for="decodeRotor2">Rotor 2 start position (A-Z):</label>
-    <input id="decodeRotor2" maxlength="1" value="A" />
-
-    <label for="decodeRotor3">Rotor 3 start position (A-Z):</label>
-    <input id="decodeRotor3" maxlength="1" value="A" />
-
-    <label for="decodePlugboard">Plugboard pairs (e.g. AB CD EF), optional:</label>
-    <input id="decodePlugboard" placeholder="Leave blank for none" />
-
-    <button id="decodeBtn">Decode Message</button>
-
-    <label>Decoded Message:</label>
-    <pre id="decodeOutput"></pre>
-  </div>
-</div>
-
-<script>
-(() => {
-  const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-  // Convert wiring string to array of indexes
-  function wiringStrToList(wiringStr) {
-    return wiringStr.split('').map(c => ALPHABET.indexOf(c));
-  }
-
-  // Rotor class
-  class Rotor {
-    constructor(wiring, notch, position = 0) {
-      this.wiring = wiring;
-      this.notch = notch;
-      this.position = position;
-      this.ringSetting = 0; // fixed for simplicity
+    class Rotor {
+      constructor(wiring, notch, pos = 0) {
+        this.wiring = wiring;
+        this.notch = notch;
+        this.pos = pos;
+      }
+      step() {
+        this.pos = (this.pos + 1) % 26;
+        return this.pos === this.notch;
+      }
+      fwd(c) {
+        const i = (c + this.pos) % 26;
+        const o = (this.wiring[i] - this.pos + 26) % 26;
+        return o;
+      }
+      bwd(c) {
+        const i = (c + this.pos) % 26;
+        const o = (this.wiring.indexOf(i) - this.pos + 26) % 26;
+        return o;
+      }
     }
 
-    encodeForward(c) {
-      const shiftedPos = (c + this.position - this.ringSetting + 26) % 26;
-      const wiredChar = this.wiring[shiftedPos];
-      const output = (wiredChar - this.position + this.ringSetting + 26) % 26;
-      return output;
+    class Enigma {
+      constructor(rotors, reflector, plug = {}) {
+        this.r = rotors;
+        this.ref = reflector;
+        this.p = plug;
+      }
+      enc(c) {
+        if (!A.includes(c)) return c;
+        let i = A.indexOf(c);
+        if (this.r[0].step() && this.r[1].step()) this.r[2].step();
+
+        i = this.p[i] ?? i;
+        for (let r of this.r) i = r.fwd(i);
+        i = this.ref[i];
+        for (let r of [...this.r].reverse()) i = r.bwd(i);
+        i = this.p[i] ?? i;
+
+        return A[i];
+      }
+      run(msg) {
+        return msg.toUpperCase().split('').map(c => this.enc(c)).join('');
+      }
     }
 
-    encodeBackward(c) {
-      const shiftedPos = (c + this.position - this.ringSetting + 26) % 26;
-      const wiredPos = this.wiring.indexOf(shiftedPos);
-      const output = (wiredPos - this.position + this.ringSetting + 26) % 26;
-      return output;
-    }
+    const toList = s => s.split('').map(c => A.indexOf(c));
+    const REFLECTOR_B = toList("YRUHQSLDPXNGOKMIEBFZCWVJAT");
+    const ROTOR_I = toList("EKMFLGDQVZNTOWYHXUSPAIBRCJ");
+    const ROTOR_II = toList("AJDKSIRUXBLHWTMCQGZNPYFVOE");
+    const ROTOR_III = toList("BDFHJLCPRTXVZNYEIWGAKMUSQO");
 
-    step() {
-      this.position = (this.position + 1) % 26;
-      return this.position === this.notch;
-    }
-  }
+    const NOTCH_I = A.indexOf("Q"), NOTCH_II = A.indexOf("E"), NOTCH_III = A.indexOf("V");
 
-  // Enigma Machine class
-  class EnigmaMachine {
-    constructor(rotors, reflector, plugboard = {}) {
-      this.rotors = rotors;
-      this.reflector = reflector;
-      this.plugboard = plugboard;
-    }
-
-    encodeChar(char) {
-      if (!ALPHABET.includes(char)) return char;
-
-      let c = ALPHABET.indexOf(char);
-
-      // Step rotors before encoding
-      if (this.rotors[0].step()) {
-        if (this.rotors[1].step()) {
-          this.rotors[2].step();
+    function parsePlugboard(pairs) {
+      const map = {};
+      pairs.toUpperCase().trim().split(/\s+/).forEach(p => {
+        if (p.length === 2) {
+          const [a, b] = [A.indexOf(p[0]), A.indexOf(p[1])];
+          if (a !== b && a >= 0 && b >= 0) {
+            map[a] = b;
+            map[b] = a;
+          }
         }
-      }
-
-      // Plugboard in
-      c = this.plugboard[c] !== undefined ? this.plugboard[c] : c;
-
-      // Forward through rotors
-      for (const rotor of this.rotors) {
-        c = rotor.encodeForward(c);
-      }
-
-      // Reflector
-      c = this.reflector[c];
-
-      // Backward through rotors
-      for (let i = this.rotors.length - 1; i >= 0; i--) {
-        c = this.rotors[i].encodeBackward(c);
-      }
-
-      // Plugboard out
-      c = this.plugboard[c] !== undefined ? this.plugboard[c] : c;
-
-      return ALPHABET[c];
+      });
+      return map;
     }
 
-    encodeMessage(message) {
-      return message.toUpperCase().split('').map(ch => this.encodeChar(ch)).join('');
-    }
-  }
-
-  // Rotor wirings and notch positions (Enigma I)
-  const ROTOR_I = wiringStrToList("EKMFLGDQVZNTOWYHXUSPAIBRCJ");
-  const ROTOR_II = wiringStrToList("AJDKSIRUXBLHWTMCQGZNPYFVOE");
-  const ROTOR_III = wiringStrToList("BDFHJLCPRTXVZNYEIWGAKMUSQO");
-
-  const NOTCH_I = ALPHABET.indexOf("Q");
-  const NOTCH_II = ALPHABET.indexOf("E");
-  const NOTCH_III = ALPHABET.indexOf("V");
-
-  // Reflector B
-  const REFLECTOR_B_STR = "YRUHQSLDPXNGOKMIEBFZCWVJAT";
-  const REFLECTOR_B = wiringStrToList(REFLECTOR_B_STR);
-
-  // Create plugboard mapping from pairs string (like "AB CD EF")
-  function createPlugboard(pairsStr) {
-    const plugboard = {};
-    if (!pairsStr) return plugboard;
-    const pairs = pairsStr.toUpperCase().trim().split(/\s+/);
-    const usedLetters = new Set();
-
-    for (const pair of pairs) {
-      if (pair.length !== 2) continue;
-      const [a, b] = pair.split('');
-      if (
-        ALPHABET.includes(a) &&
-        ALPHABET.includes(b) &&
-        !usedLetters.has(a) &&
-        !usedLetters.has(b) &&
-        a !== b
-      ) {
-        plugboard[ALPHABET.indexOf(a)] = ALPHABET.indexOf(b);
-        plugboard[ALPHABET.indexOf(b)] = ALPHABET.indexOf(a);
-        usedLetters.add(a);
-        usedLetters.add(b);
-      }
-    }
-    return plugboard;
-  }
-
-  // Helpers to validate rotor start positions
-  function parseRotorPosition(char) {
-    char = char.toUpperCase();
-    return ALPHABET.includes(char) ? ALPHABET.indexOf(char) : null;
-  }
-
-  // Main functions to run encoding or decoding
-  function runEnigma(message, rotor1Pos, rotor2Pos, rotor3Pos, plugboardStr) {
-    const rotor1 = new Rotor(ROTOR_I, NOTCH_I, rotor1Pos);
-    const rotor2 = new Rotor(ROTOR_II, NOTCH_II, rotor2Pos);
-    const rotor3 = new Rotor(ROTOR_III, NOTCH_III, rotor3Pos);
-
-    const plugboard = createPlugboard(plugboardStr);
-
-    const enigma = new EnigmaMachine([rotor1, rotor2, rotor3], REFLECTOR_B, plugboard);
-
-    return enigma.encodeMessage(message);
-  }
-
-  // Encoder button click handler
-  document.getElementById('encodeBtn').addEventListener('click', () => {
-    const msg = document.getElementById('encodeMessage').value;
-    const r1 = parseRotorPosition(document.getElementById('encodeRotor1').value);
-    const r2 = parseRotorPosition(document.getElementById('encodeRotor2').value);
-    const r3 = parseRotorPosition(document.getElementById('encodeRotor3').value);
-    const plugStr = document.getElementById('encodePlugboard').value;
-
-    if (r1 === null || r2 === null || r3 === null) {
-      alert("Please enter valid rotor start positions (A-Z) for Encoder.");
-      return;
+    function getPos(id) {
+      const v = document.getElementById(id).value.toUpperCase();
+      return A.indexOf(v);
     }
 
-    if (!msg.trim()) {
-      alert("Please enter a message to encode.");
-      return;
+    function process() {
+      const msg = document.getElementById('message').value;
+      const r1 = new Rotor(ROTOR_I, NOTCH_I, getPos('r1'));
+      const r2 = new Rotor(ROTOR_II, NOTCH_II, getPos('r2'));
+      const r3 = new Rotor(ROTOR_III, NOTCH_III, getPos('r3'));
+      const plug = parsePlugboard(document.getElementById('plugboard').value);
+
+      const enigma = new Enigma([r1, r2, r3], REFLECTOR_B, plug);
+      document.getElementById('output').textContent = enigma.run(msg);
     }
-
-    const encoded = runEnigma(msg, r1, r2, r3, plugStr);
-    document.getElementById('encodeOutput').textContent = encoded;
-  });
-
-  // Decoder button click handler
-  document.getElementById('decodeBtn').addEventListener('click', () => {
-    const msg = document.getElementById('decodeMessage').value;
-    const r1 = parseRotorPosition(document.getElementById('decodeRotor1').value);
-    const r2 = parseRotorPosition(document.getElementById('decodeRotor2').value);
-    const r3 = parseRotorPosition(document.getElementById('decodeRotor3').value);
-    const plugStr = document.getElementById('decodePlugboard').value;
-
-    if (r1 === null || r2 === null || r3 === null) {
-      alert("Please enter valid rotor start positions (A-Z) for Decoder.");
-      return;
-    }
-
-    if (!msg.trim()) {
-      alert("Please enter ciphertext to decode.");
-      return;
-    }
-
-    const decoded = runEnigma(msg, r1, r2, r3, plugStr);
-    document.getElementById('decodeOutput').textContent = decoded;
-  });
-})();
-</script>
-
+  </script>
 </body>
 </html>
