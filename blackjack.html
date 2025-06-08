@@ -1,1 +1,246 @@
-<p>hello there world</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Blackjack</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #111;
+      color: #eee;
+    }
+
+    nav {
+      background: #222;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    nav a {
+      color: #eee;
+      text-decoration: none;
+      margin-left: 15px;
+      font-weight: bold;
+    }
+
+    .container {
+      padding: 20px;
+      max-width: 800px;
+      margin: auto;
+    }
+
+    .game-area {
+      background: #1d1d1d;
+      padding: 20px;
+      border-radius: 10px;
+    }
+
+    .hand {
+      margin-bottom: 20px;
+    }
+
+    .buttons button, .betting button {
+      background: #333;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin-right: 10px;
+      margin-top: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .buttons button:hover, .betting button:hover {
+      background: #444;
+    }
+
+    #reset-button {
+      display: none;
+      margin-top: 20px;
+      background: #800;
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div><strong>Enigma Machine</strong></div>
+  <div>
+    <a href="index.html">Enigma</a>
+    <a href="blackjack.html">Blackjack</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="game-area">
+    <h2>Blackjack</h2>
+    <p><strong>Chips:</strong> <span id="chip-count">1000</span></p>
+    <div class="betting">
+      <strong>Place Bet:</strong><br>
+      <button onclick="placeBet(5)">5</button>
+      <button onclick="placeBet(10)">10</button>
+      <button onclick="placeBet(50)">50</button>
+      <button onclick="placeBet(100)">100</button>
+      <button onclick="placeBet(1000)">1000</button>
+      <p>Current Bet: <span id="current-bet">0</span></p>
+    </div>
+
+    <div class="hand">
+      <strong>Dealer's Hand:</strong>
+      <div id="dealer-hand"></div>
+    </div>
+    <div class="hand">
+      <strong>Your Hand:</strong>
+      <div id="player-hand"></div>
+    </div>
+
+    <div class="buttons">
+      <button onclick="startGame()">Start Game</button>
+      <button onclick="hit()">Hit</button>
+      <button onclick="stand()">Stand</button>
+    </div>
+
+    <p id="message"></p>
+    <button id="reset-button" onclick="resetGame()">Reset Game</button>
+  </div>
+</div>
+
+<script>
+let deck, playerHand, dealerHand;
+let chips = 1000;
+let currentBet = 0;
+
+const suits = ['♠', '♥', '♦', '♣'];
+const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+
+function createDeck() {
+  deck = [];
+  for (let suit of suits) {
+    for (let rank of ranks) {
+      deck.push({ suit, rank });
+    }
+  }
+  deck.sort(() => Math.random() - 0.5);
+}
+
+function getValue(card) {
+  if (['J', 'Q', 'K'].includes(card.rank)) return 10;
+  if (card.rank === 'A') return 11;
+  return parseInt(card.rank);
+}
+
+function getHandValue(hand) {
+  let value = 0;
+  let aces = 0;
+  for (let card of hand) {
+    value += getValue(card);
+    if (card.rank === 'A') aces++;
+  }
+  while (value > 21 && aces > 0) {
+    value -= 10;
+    aces--;
+  }
+  return value;
+}
+
+function renderHands(hideDealerCard = false) {
+  document.getElementById('player-hand').textContent = playerHand.map(c => c.rank + c.suit).join(' ');
+  if (hideDealerCard) {
+    document.getElementById('dealer-hand').textContent = '[Hidden] ' + dealerHand.slice(1).map(c => c.rank + c.suit).join(' ');
+  } else {
+    document.getElementById('dealer-hand').textContent = dealerHand.map(c => c.rank + c.suit).join(' ');
+  }
+}
+
+function updateUI() {
+  document.getElementById('chip-count').textContent = chips;
+  document.getElementById('current-bet').textContent = currentBet;
+  document.getElementById('reset-button').style.display = chips <= 0 ? 'inline-block' : 'none';
+}
+
+function placeBet(amount) {
+  if (chips >= amount && currentBet === 0) {
+    currentBet = amount;
+    chips -= amount;
+    updateUI();
+    document.getElementById('message').textContent = `You placed a bet of ${amount} chips. Click "Start Game" to begin.`;
+  } else if (currentBet > 0) {
+    document.getElementById('message').textContent = "You already placed a bet.";
+  } else {
+    document.getElementById('message').textContent = "Not enough chips to place that bet.";
+  }
+}
+
+function startGame() {
+  if (currentBet <= 0) {
+    document.getElementById('message').textContent = "Place a bet before starting.";
+    return;
+  }
+  createDeck();
+  playerHand = [deck.pop(), deck.pop()];
+  dealerHand = [deck.pop(), deck.pop()];
+  renderHands(true);
+  document.getElementById('message').textContent = '';
+
+  if (getHandValue(playerHand) === 21) {
+    stand();
+  }
+}
+
+function hit() {
+  if (!playerHand || playerHand.length === 0) return;
+  playerHand.push(deck.pop());
+  renderHands(true);
+  if (getHandValue(playerHand) > 21) endGame();
+}
+
+function stand() {
+  if (!dealerHand || dealerHand.length === 0) return;
+  while (getHandValue(dealerHand) < 17) {
+    dealerHand.push(deck.pop());
+  }
+  endGame();
+}
+
+function endGame() {
+  renderHands();
+  const playerValue = getHandValue(playerHand);
+  const dealerValue = getHandValue(dealerHand);
+  let message = '';
+
+  if (playerValue > 21) {
+    message = 'You busted! Dealer wins.';
+  } else if (dealerValue > 21) {
+    message = 'Dealer busted! You win!';
+    chips += currentBet * 2;
+  } else if (playerValue > dealerValue) {
+    message = 'You win!';
+    chips += currentBet * 2;
+  } else if (dealerValue > playerValue) {
+    message = 'Dealer wins!';
+  } else {
+    message = "It's a tie!";
+    chips += currentBet;
+  }
+
+  currentBet = 0;
+  document.getElementById('message').textContent = message;
+  updateUI();
+}
+
+function resetGame() {
+  chips = 1000;
+  currentBet = 0;
+  playerHand = [];
+  dealerHand = [];
+  document.getElementById('player-hand').textContent = '';
+  document.getElementById('dealer-hand').textContent = '';
+  document.getElementById('message').textContent = '';
+  updateUI();
+}
+</script>
+
+</body>
+</html>
