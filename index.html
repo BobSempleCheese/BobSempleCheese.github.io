@@ -1,1 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Enigma Machine</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #111;
+      color: #f0f0f0;
+    }
 
+    nav {
+      background-color: #222;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    nav a {
+      color: #f0f0f0;
+      text-decoration: none;
+      margin-left: 15px;
+      font-weight: bold;
+    }
+
+    .container {
+      display: flex;
+      padding: 20px;
+      gap: 20px;
+      justify-content: space-between;
+    }
+
+    .section {
+      flex: 1;
+      background-color: #1c1c1c;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #000;
+    }
+
+    textarea {
+      width: 100%;
+      height: 200px;
+      background-color: #222;
+      color: #fff;
+      border: none;
+      padding: 10px;
+      font-family: monospace;
+      resize: vertical;
+      border-radius: 5px;
+    }
+
+    button {
+      background-color: #333;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      margin-top: 10px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+
+    button:hover {
+      background-color: #444;
+    }
+
+    h2 {
+      margin-top: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div><strong>Enigma Machine</strong></div>
+    <div>
+      <a href="enigma.html">Enigma</a>
+      <a href="blackjack.html">Blackjack</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <!-- Encoder -->
+    <div class="section">
+      <h2>Encoder</h2>
+      <textarea id="encoderInput" placeholder="Enter plaintext..."></textarea>
+      <button onclick="encode()">Encode</button>
+      <textarea id="encodedOutput" placeholder="Encoded output..." readonly></textarea>
+    </div>
+
+    <!-- Decoder -->
+    <div class="section">
+      <h2>Decoder</h2>
+      <textarea id="decoderInput" placeholder="Enter encoded text..."></textarea>
+      <button onclick="decode()">Decode</button>
+      <textarea id="decodedOutput" placeholder="Decoded output..." readonly></textarea>
+    </div>
+  </div>
+
+  <script>
+    // Simple Enigma-like Caesar cipher logic for demo purposes
+    const shift = 7;
+
+    function encodeChar(c) {
+      if (c.match(/[A-Z]/)) return String.fromCharCode((c.charCodeAt(0) - 65 + shift) % 26 + 65);
+      if (c.match(/[a-z]/)) return String.fromCharCode((c.charCodeAt(0) - 97 + shift) % 26 + 97);
+      return c;
+    }
+
+    function decodeChar(c) {
+      if (c.match(/[A-Z]/)) return String.fromCharCode((c.charCodeAt(0) - 65 - shift + 26) % 26 + 65);
+      if (c.match(/[a-z]/)) return String.fromCharCode((c.charCodeAt(0) - 97 - shift + 26) % 26 + 97);
+      return c;
+    }
+
+    function encode() {
+      const input = document.getElementById("encoderInput").value;
+      const output = input.split('').map(encodeChar).join('');
+      document.getElementById("encodedOutput").value = output;
+    }
+
+    function decode() {
+      const input = document.getElementById("decoderInput").value;
+      const output = input.split('').map(decodeChar).join('');
+      document.getElementById("decodedOutput").value = output;
+    }
+  </script>
+
+</body>
+</html>
