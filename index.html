@@ -157,31 +157,36 @@ function runEnigma(inputId, outputId, isDecoder = false) {
   const plugboard = document.getElementById(isDecoder ? "d_plugboard" : "plugboard").value.toUpperCase();
 
   let pos = posInput.map(p => p.charCodeAt(0) - 65);
-  let input = document.getElementById(inputId).value.toUpperCase().replace(/[^A-Z]/g, "");
+  let rawInput = document.getElementById(inputId).value.toUpperCase();
   let output = "";
 
-  for (let i = 0; i < input.length; i++) {
-    // Rotor stepping (simplified double stepping)
+  for (let i = 0; i < rawInput.length; i++) {
+    let c = rawInput[i];
+
+    if (c === " ") {
+      output += " ";
+      continue;
+    }
+
+    if (c < "A" || c > "Z") continue; // ignore non-letter, non-space chars
+
+    // Rotor stepping (simplified)
     pos[2] = (pos[2] + 1) % 26;
     if (pos[2] === 0) {
       pos[1] = (pos[1] + 1) % 26;
       if (pos[1] === 0) pos[0] = (pos[0] + 1) % 26;
     }
 
-    let c = input[i];
     c = plugboardSwap(c, plugboard);
 
-    // Forward through rotors
     for (let j = 2; j >= 0; j--) {
       let shifted = mod(c.charCodeAt(0) - 65 + pos[j], 26);
       c = rotors[j][shifted];
       c = String.fromCharCode(mod(c.charCodeAt(0) - 65 - pos[j], 26) + 65);
     }
 
-    // Reflector
     c = reflector[c.charCodeAt(0) - 65];
 
-    // Reverse through rotors
     for (let j = 0; j < 3; j++) {
       let shifted = mod(c.charCodeAt(0) - 65 + pos[j], 26);
       c = String.fromCharCode(65 + rotors[j].indexOf(String.fromCharCode(shifted + 65)));
