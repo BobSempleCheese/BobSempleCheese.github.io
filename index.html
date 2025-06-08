@@ -50,18 +50,15 @@
       font-family: monospace;
     }
 
-    select, input[type="text"] {
+    input[type="text"] {
       background: #222;
       color: #fff;
       border: none;
       padding: 5px;
-      margin-right: 10px;
+      margin-bottom: 8px;
+      width: 100%;
       border-radius: 5px;
-    }
-
-    label {
-      display: inline-block;
-      margin-right: 10px;
+      font-family: monospace;
     }
 
     button {
@@ -78,10 +75,9 @@
       background: #444;
     }
 
-    .settings {
-      margin: 10px 0;
+    h2 {
+      margin-top: 0;
     }
-
   </style>
 </head>
 <body>
@@ -95,120 +91,120 @@
 </nav>
 
 <div class="container">
+  <!-- Encoder -->
   <div class="section">
     <h2>Encoder</h2>
 
-    <div class="settings">
-      <label>Rotors:</label>
-      <select id="rotor1"><option>I</option><option>II</option><option>III</option></select>
-      <select id="rotor2"><option>II</option><option>III</option><option>I</option></select>
-      <select id="rotor3"><option>III</option><option>I</option><option>II</option></select>
-    </div>
+    <label>Rotor 1 Wiring (26 letters A-Z):</label>
+    <input type="text" id="rotor1" value="EKMFLGDQVZNTOWYHXUSPAIBRCJ" maxlength="26">
 
-    <div class="settings">
-      <label>Positions:</label>
-      <input type="text" id="position1" value="A" maxlength="1" size="1">
-      <input type="text" id="position2" value="A" maxlength="1" size="1">
-      <input type="text" id="position3" value="A" maxlength="1" size="1">
-    </div>
+    <label>Rotor 2 Wiring:</label>
+    <input type="text" id="rotor2" value="AJDKSIRUXBLHWTMCQGZNPYFVOE" maxlength="26">
 
-    <div class="settings">
-      <label>Plugboard (e.g. AB CD EF):</label>
-      <input type="text" id="plugboard" value="">
-    </div>
+    <label>Rotor 3 Wiring:</label>
+    <input type="text" id="rotor3" value="BDFHJLCPRTXVZNYEIWGAKMUSQO" maxlength="26">
 
-    <textarea id="encoderInput" placeholder="Type your message..."></textarea>
-    <button onclick="runEnigma()">Encode</button>
-    <textarea id="encodedOutput" readonly placeholder="Encoded result..."></textarea>
+    <label>Rotor Positions (e.g. A B C):</label>
+    <input type="text" id="positions" value="A A A" maxlength="5">
+
+    <label>Plugboard (e.g. AB CD EF):</label>
+    <input type="text" id="plugboard" value="">
+
+    <label>Input Message:</label>
+    <textarea id="encoderInput" placeholder="Enter text..."></textarea>
+    <button onclick="runEnigma('encoderInput', 'encodedOutput')">Encode</button>
+    <label>Output:</label>
+    <textarea id="encodedOutput" readonly></textarea>
+  </div>
+
+  <!-- Decoder -->
+  <div class="section">
+    <h2>Decoder</h2>
+
+    <label>Rotor 1 Wiring:</label>
+    <input type="text" id="d_rotor1" value="EKMFLGDQVZNTOWYHXUSPAIBRCJ" maxlength="26">
+
+    <label>Rotor 2 Wiring:</label>
+    <input type="text" id="d_rotor2" value="AJDKSIRUXBLHWTMCQGZNPYFVOE" maxlength="26">
+
+    <label>Rotor 3 Wiring:</label>
+    <input type="text" id="d_rotor3" value="BDFHJLCPRTXVZNYEIWGAKMUSQO" maxlength="26">
+
+    <label>Rotor Positions:</label>
+    <input type="text" id="d_positions" value="A A A" maxlength="5">
+
+    <label>Plugboard:</label>
+    <input type="text" id="d_plugboard" value="">
+
+    <label>Encoded Message:</label>
+    <textarea id="decoderInput" placeholder="Enter encoded text..."></textarea>
+    <button onclick="runEnigma('decoderInput', 'decodedOutput', true)">Decode</button>
+    <label>Decoded Output:</label>
+    <textarea id="decodedOutput" readonly></textarea>
   </div>
 </div>
 
 <script>
-const rotorWiring = {
-  I: "EKMFLGDQVZNTOWYHXUSPAIBRCJ",
-  II: "AJDKSIRUXBLHWTMCQGZNPYFVOE",
-  III: "BDFHJLCPRTXVZNYEIWGAKMUSQO"
-};
+const reflector = "YRUHQSLDPXNGOKMIEBFZCWVJAT";
 
-const notch = {
-  I: "Q", II: "E", III: "V"
-};
-
-const reflector = {
-  B: "YRUHQSLDPXNGOKMIEBFZCWVJAT"
-};
-
-function rotate(rotor) {
-  return rotor.slice(1) + rotor[0];
-}
-
-function stepRotor(rotor, pos) {
-  return (rotor + pos).slice(pos) + (rotor + pos).slice(0, pos);
-}
-
-function plugboardSwap(text, wiring) {
+function plugboardSwap(c, wiring) {
   for (let pair of wiring.split(' ')) {
     if (pair.length === 2) {
-      const a = pair[0].toUpperCase();
-      const b = pair[1].toUpperCase();
-      text = text.replaceAll(a, '_').replaceAll(b, a).replaceAll('_', b);
+      let a = pair[0].toUpperCase();
+      let b = pair[1].toUpperCase();
+      if (c === a) return b;
+      if (c === b) return a;
     }
   }
-  return text;
+  return c;
 }
 
 function mod(n, m) {
   return ((n % m) + m) % m;
 }
 
-function runEnigma() {
-  let rotorNames = [rotor1.value, rotor2.value, rotor3.value];
-  let rotors = rotorNames.map(r => rotorWiring[r]);
-  let positions = [position1.value, position2.value, position3.value].map(p => p.toUpperCase().charCodeAt(0) - 65);
+function runEnigma(inputId, outputId, isDecoder = false) {
+  const rotor1 = document.getElementById(isDecoder ? "d_rotor1" : "rotor1").value.toUpperCase();
+  const rotor2 = document.getElementById(isDecoder ? "d_rotor2" : "rotor2").value.toUpperCase();
+  const rotor3 = document.getElementById(isDecoder ? "d_rotor3" : "rotor3").value.toUpperCase();
 
-  let plug = plugboard.value;
-  let input = encoderInput.value.toUpperCase().replace(/[^A-Z]/g, "");
+  const positionsInput = document.getElementById(isDecoder ? "d_positions" : "positions").value.toUpperCase().split(" ");
+  const plugboard = document.getElementById(isDecoder ? "d_plugboard" : "plugboard").value.toUpperCase();
+
+  let pos = positionsInput.map(p => p.charCodeAt(0) - 65);
+  let rotors = [rotor1, rotor2, rotor3];
+  let input = document.getElementById(inputId).value.toUpperCase().replace(/[^A-Z]/g, "");
   let output = "";
 
   for (let i = 0; i < input.length; i++) {
-    // Step rotors
-    positions[2] = (positions[2] + 1) % 26;
-    if (positions[2] === notch[rotorNames[2]].charCodeAt(0) - 65) {
-      positions[1] = (positions[1] + 1) % 26;
-      if (positions[1] === notch[rotorNames[1]].charCodeAt(0) - 65) {
-        positions[0] = (positions[0] + 1) % 26;
-      }
+    pos[2] = (pos[2] + 1) % 26;
+    if (pos[2] === 0) {
+      pos[1] = (pos[1] + 1) % 26;
+      if (pos[1] === 0) pos[0] = (pos[0] + 1) % 26;
     }
 
     let c = input[i];
+    c = plugboardSwap(c, plugboard);
 
-    // Plugboard in
-    c = plugboardSwap(c, plug);
-
-    // Pass through rotors (forward)
     for (let j = 2; j >= 0; j--) {
-      let index = mod(c.charCodeAt(0) - 65 + positions[j], 26);
-      c = rotors[j][index];
-      c = String.fromCharCode(mod(c.charCodeAt(0) - 65 - positions[j], 26) + 65);
+      let shiftedIndex = mod(c.charCodeAt(0) - 65 + pos[j], 26);
+      c = rotors[j][shiftedIndex];
+      c = String.fromCharCode(mod(c.charCodeAt(0) - 65 - pos[j], 26) + 65);
     }
 
-    // Reflector
-    c = reflector.B[c.charCodeAt(0) - 65];
+    c = reflector[c.charCodeAt(0) - 65];
 
-    // Pass through rotors (reverse)
     for (let j = 0; j < 3; j++) {
-      let index = mod(c.charCodeAt(0) - 65 + positions[j], 26);
-      c = String.fromCharCode(65 + rotors[j].indexOf(String.fromCharCode(index + 65)));
-      c = String.fromCharCode(mod(c.charCodeAt(0) - 65 - positions[j], 26) + 65);
+      let shiftedIndex = mod(c.charCodeAt(0) - 65 + pos[j], 26);
+      c = String.fromCharCode(65 + rotors[j].indexOf(String.fromCharCode(shiftedIndex + 65)));
+      c = String.fromCharCode(mod(c.charCodeAt(0) - 65 - pos[j], 26) + 65);
     }
 
-    // Plugboard out
-    c = plugboardSwap(c, plug);
-
+    c = plugboardSwap(c, plugboard);
     output += c;
   }
 
-  encodedOutput.value = output;
+  document.getElementById(outputId).value = output;
 }
 </script>
 
