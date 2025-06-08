@@ -69,6 +69,7 @@
       border-radius: 5px;
       cursor: pointer;
       margin-top: 10px;
+      margin-right: 10px;
     }
 
     button:hover {
@@ -77,6 +78,13 @@
 
     h2 {
       margin-top: 0;
+    }
+
+    .output-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 5px;
     }
   </style>
 </head>
@@ -104,8 +112,12 @@
     <label>Input Message:</label>
     <textarea id="encoderInput" placeholder="Enter text..."></textarea>
     <button onclick="runEnigma('encoderInput', 'encodedOutput')">Encode</button>
+
     <label>Output:</label>
     <textarea id="encodedOutput" readonly></textarea>
+    <div class="output-controls">
+      <button onclick="copyText('encodedOutput', this)">Copy</button>
+    </div>
   </div>
 
   <!-- Decoder -->
@@ -121,8 +133,12 @@
     <label>Encoded Message:</label>
     <textarea id="decoderInput" placeholder="Enter encoded text..."></textarea>
     <button onclick="runEnigma('decoderInput', 'decodedOutput', true)">Decode</button>
+
     <label>Decoded Output:</label>
     <textarea id="decodedOutput" readonly></textarea>
+    <div class="output-controls">
+      <button onclick="copyText('decodedOutput', this)">Copy</button>
+    </div>
   </div>
 </div>
 
@@ -198,6 +214,17 @@ function runEnigma(inputId, outputId, isDecoder = false) {
   }
 
   document.getElementById(outputId).value = output;
+}
+
+function copyText(textareaId, buttonEl) {
+  const textarea = document.getElementById(textareaId);
+  textarea.select();
+  textarea.setSelectionRange(0, 99999); // For mobile devices
+  navigator.clipboard.writeText(textarea.value).then(() => {
+    const original = buttonEl.textContent;
+    buttonEl.textContent = "Copied!";
+    setTimeout(() => buttonEl.textContent = original, 1500);
+  });
 }
 </script>
 
