@@ -95,15 +95,6 @@
   <div class="section">
     <h2>Encoder</h2>
 
-    <label>Rotor 1 Wiring (26 letters A-Z):</label>
-    <input type="text" id="rotor1" value="EKMFLGDQVZNTOWYHXUSPAIBRCJ" maxlength="26">
-
-    <label>Rotor 2 Wiring:</label>
-    <input type="text" id="rotor2" value="AJDKSIRUXBLHWTMCQGZNPYFVOE" maxlength="26">
-
-    <label>Rotor 3 Wiring:</label>
-    <input type="text" id="rotor3" value="BDFHJLCPRTXVZNYEIWGAKMUSQO" maxlength="26">
-
     <label>Rotor Positions (e.g. A B C):</label>
     <input type="text" id="positions" value="A A A" maxlength="5">
 
@@ -121,16 +112,7 @@
   <div class="section">
     <h2>Decoder</h2>
 
-    <label>Rotor 1 Wiring:</label>
-    <input type="text" id="d_rotor1" value="EKMFLGDQVZNTOWYHXUSPAIBRCJ" maxlength="26">
-
-    <label>Rotor 2 Wiring:</label>
-    <input type="text" id="d_rotor2" value="AJDKSIRUXBLHWTMCQGZNPYFVOE" maxlength="26">
-
-    <label>Rotor 3 Wiring:</label>
-    <input type="text" id="d_rotor3" value="BDFHJLCPRTXVZNYEIWGAKMUSQO" maxlength="26">
-
-    <label>Rotor Positions:</label>
+    <label>Rotor Positions (e.g. A B C):</label>
     <input type="text" id="d_positions" value="A A A" maxlength="5">
 
     <label>Plugboard:</label>
@@ -145,6 +127,13 @@
 </div>
 
 <script>
+// Fixed rotor wiring: I, II, III
+const rotors = [
+  "EKMFLGDQVZNTOWYHXUSPAIBRCJ", // Rotor I
+  "AJDKSIRUXBLHWTMCQGZNPYFVOE", // Rotor II
+  "BDFHJLCPRTXVZNYEIWGAKMUSQO"  // Rotor III
+];
+
 const reflector = "YRUHQSLDPXNGOKMIEBFZCWVJAT";
 
 function plugboardSwap(c, wiring) {
@@ -164,19 +153,15 @@ function mod(n, m) {
 }
 
 function runEnigma(inputId, outputId, isDecoder = false) {
-  const rotor1 = document.getElementById(isDecoder ? "d_rotor1" : "rotor1").value.toUpperCase();
-  const rotor2 = document.getElementById(isDecoder ? "d_rotor2" : "rotor2").value.toUpperCase();
-  const rotor3 = document.getElementById(isDecoder ? "d_rotor3" : "rotor3").value.toUpperCase();
-
-  const positionsInput = document.getElementById(isDecoder ? "d_positions" : "positions").value.toUpperCase().split(" ");
+  const posInput = document.getElementById(isDecoder ? "d_positions" : "positions").value.toUpperCase().split(" ");
   const plugboard = document.getElementById(isDecoder ? "d_plugboard" : "plugboard").value.toUpperCase();
 
-  let pos = positionsInput.map(p => p.charCodeAt(0) - 65);
-  let rotors = [rotor1, rotor2, rotor3];
+  let pos = posInput.map(p => p.charCodeAt(0) - 65);
   let input = document.getElementById(inputId).value.toUpperCase().replace(/[^A-Z]/g, "");
   let output = "";
 
   for (let i = 0; i < input.length; i++) {
+    // Rotor stepping (simplified double stepping)
     pos[2] = (pos[2] + 1) % 26;
     if (pos[2] === 0) {
       pos[1] = (pos[1] + 1) % 26;
@@ -186,17 +171,20 @@ function runEnigma(inputId, outputId, isDecoder = false) {
     let c = input[i];
     c = plugboardSwap(c, plugboard);
 
+    // Forward through rotors
     for (let j = 2; j >= 0; j--) {
-      let shiftedIndex = mod(c.charCodeAt(0) - 65 + pos[j], 26);
-      c = rotors[j][shiftedIndex];
+      let shifted = mod(c.charCodeAt(0) - 65 + pos[j], 26);
+      c = rotors[j][shifted];
       c = String.fromCharCode(mod(c.charCodeAt(0) - 65 - pos[j], 26) + 65);
     }
 
+    // Reflector
     c = reflector[c.charCodeAt(0) - 65];
 
+    // Reverse through rotors
     for (let j = 0; j < 3; j++) {
-      let shiftedIndex = mod(c.charCodeAt(0) - 65 + pos[j], 26);
-      c = String.fromCharCode(65 + rotors[j].indexOf(String.fromCharCode(shiftedIndex + 65)));
+      let shifted = mod(c.charCodeAt(0) - 65 + pos[j], 26);
+      c = String.fromCharCode(65 + rotors[j].indexOf(String.fromCharCode(shifted + 65)));
       c = String.fromCharCode(mod(c.charCodeAt(0) - 65 - pos[j], 26) + 65);
     }
 
