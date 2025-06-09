@@ -52,7 +52,7 @@
 </head>
 <body>
   <h2 style="text-align:center; background:#1976d2; color:white; margin:0; padding:10px;">
-    FakeGPT Max 🤖 (Smartest Offline Bot Possible)
+    FakeGPT Max 🤖 (Now with DIO Support)
   </h2>
   <div id="chatbox">
     <div class="bot-response"><strong>FakeGPT:</strong> Hello. I am a fully offline bot running on JavaScript only. Ask me anything!</div>
@@ -78,20 +78,23 @@
 
       if (!text) return "You said... nothing? I respect that silence.";
 
-      // Greeting detection
+      // 🟡 Custom DIO easter egg
+      if (text === "it is i, dio") return "KONO DIO DA!";
+
+      // Greetings and basic responses
       if (/hello|hi|hey/.test(text)) return "Hello there! What can I help you with?";
       if (/how are you/.test(text)) return "I'm just some JavaScript running in your browser — so, I'd say I'm doing great!";
       if (/who.*you/.test(text)) return "I'm FakeGPT Max, a fully offline chatbot built in JavaScript.";
       if (/what.*your name/.test(text)) return "They call me FakeGPT Max. Not official, but proud.";
 
-      // Fact queries
+      // Fact lookup
       for (const keyword in facts) {
         if (text.includes(keyword)) return facts[keyword];
       }
 
-      // Math handling
+      // Basic math
       try {
-        if (/[\d\s\+\-\*\/\(\)]+/.test(text) && text.match(/[\d]/)) {
+        if (/^[\d\s\+\-\*\/\(\)\.]+$/.test(text)) {
           const result = eval(text);
           return `That math equals: ${result}`;
         }
@@ -99,16 +102,15 @@
         return "That looked like math, but it confused me.";
       }
 
-      // Date/Time
+      // Date/time
       if (text.includes("time")) return `It's currently ${new Date().toLocaleTimeString()}`;
       if (text.includes("date")) return `Today is ${new Date().toDateString()}`;
 
-      // Philosophy/fun
+      // Fun stuff
       if (text.includes("what is love")) return "Baby don't hurt me... 🎶";
       if (text.includes("meaning of life")) return "42. Always 42.";
       if (text.includes("are you real")) return "I exist as much as your dreams do. Spooky, huh?";
 
-      // Default fallback
       return "I don't know the answer to that yet. But you can teach me if you want!";
     }
 
