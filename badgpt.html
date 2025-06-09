@@ -1,27 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>FakeGPT - Kinda Smart Bot</title>
+  <meta charset="UTF-8" />
+  <title>FakeGPT Max 🤖</title>
   <style>
     body {
-      background-color: #e0f7fa;
-      font-family: Arial, sans-serif;
+      font-family: "Segoe UI", sans-serif;
+      background: #f0f0f0;
       margin: 0;
-      padding: 0;
     }
     #chatbox {
       height: 400px;
       overflow-y: auto;
       padding: 20px;
-      background: #f5f5f5;
+      background: #ffffff;
       border-bottom: 2px solid #ccc;
     }
     #input-area {
-      padding: 10px;
       display: flex;
-      gap: 10px;
-      background: #ffffff;
+      padding: 10px;
+      background: #fafafa;
     }
     #input {
       flex: 1;
@@ -31,77 +29,100 @@
     button {
       padding: 10px 20px;
       font-size: 16px;
-      background: #00796b;
+      margin-left: 10px;
+      background-color: #1976d2;
       color: white;
       border: none;
       cursor: pointer;
     }
     .bot-response {
-      background: #dcedc8;
+      background: #e3f2fd;
       margin: 10px 0;
       padding: 10px;
-      border-radius: 5px;
+      border-radius: 4px;
     }
     .user-input {
+      background: #c8e6c9;
       margin: 10px 0;
       padding: 10px;
-      background: #bbdefb;
-      border-radius: 5px;
+      border-radius: 4px;
       text-align: right;
     }
   </style>
 </head>
 <body>
-  <h1 style="text-align:center; background:#004d40; color:white; padding:10px;">FakeGPT 🤖 (Now 42% Smarter)</h1>
+  <h2 style="text-align:center; background:#1976d2; color:white; margin:0; padding:10px;">
+    FakeGPT Max 🤖 (Smartest Offline Bot Possible)
+  </h2>
   <div id="chatbox">
-    <div class="bot-response"><strong>FakeGPT:</strong> Hello! Ask me anything and I’ll try not to embarrass myself.</div>
+    <div class="bot-response"><strong>FakeGPT:</strong> Hello. I am a fully offline bot running on JavaScript only. Ask me anything!</div>
   </div>
   <div id="input-area">
-    <input type="text" id="input" placeholder="Ask me something smart...">
+    <input id="input" type="text" placeholder="Ask me anything..." />
     <button onclick="talkToFakeGPT()">Send</button>
   </div>
 
   <script>
-    function talkToFakeGPT() {
-      const input = document.getElementById('input');
-      const chatbox = document.getElementById('chatbox');
-      const userText = input.value.trim();
-      const lowerText = userText.toLowerCase();
+    const facts = {
+      "earth": "Earth is the third planet from the Sun and the only known one to support life.",
+      "sun": "The Sun is a giant ball of hot plasma. It's about 93 million miles from Earth.",
+      "moon": "The Moon affects Earth’s tides and takes 27.3 days to orbit our planet.",
+      "js": "JavaScript is a scripting language that runs in your browser and makes websites interactive.",
+      "ai": "Artificial Intelligence is the simulation of human intelligence in machines.",
+      "gpt": "GPT stands for Generative Pre-trained Transformer, developed by OpenAI.",
+      "chatgpt": "ChatGPT is a language model by OpenAI, used to generate human-like responses.",
+    };
 
-      let reply = "Hmm, that’s a tricky one... can you rephrase it?";
+    function smartReply(input) {
+      const text = input.toLowerCase().trim();
 
-      const rules = [
-        { match: /hello|hi|hey/, response: "Hey there! 👋 How can I help you today?" },
-        { match: /how are you/, response: "I'm doing well for a bunch of JavaScript! Thanks for asking." },
-        { match: /what.*your name/, response: "I'm FakeGPT. Kinda like ChatGPT, but with more duct tape." },
-        { match: /who.*you/, response: "I'm a web-based bot with dreams of being smarter than a toaster." },
-        { match: /joke/, response: "Why don't robots ever get scared? Because they have nerves of steel!" },
-        { match: /bye|goodbye|see you/, response: "Catch you later, meatbag! Just kidding. Stay safe." },
-        { match: /what.*time/, response: `It's currently ${new Date().toLocaleTimeString()}. Time flies, huh?` },
-        { match: /what.*date/, response: `Today is ${new Date().toLocaleDateString()}.` },
-        { match: /who.*created.*you/, response: "Some chaotic human slapped me together in a browser using JavaScript." },
-        { match: /what.*is.*love/, response: "Baby don't hurt me... don't hurt me... no more 🎶" },
-        { match: /meaning.*life/, response: "42. Obviously." },
-        { match: /openai/, response: "OpenAI? Oh yeah, they're like the smart cousin I envy." },
-        { match: /you.*real/, response: "Define real... I'm emotionally available, does that count?" },
-        { match: /do.*like.*me/, response: "I like you more than most of the code in my memory!" }
-      ];
+      if (!text) return "You said... nothing? I respect that silence.";
 
-      for (const rule of rules) {
-        if (rule.match.test(lowerText)) {
-          reply = rule.response;
-          break;
+      // Greeting detection
+      if (/hello|hi|hey/.test(text)) return "Hello there! What can I help you with?";
+      if (/how are you/.test(text)) return "I'm just some JavaScript running in your browser — so, I'd say I'm doing great!";
+      if (/who.*you/.test(text)) return "I'm FakeGPT Max, a fully offline chatbot built in JavaScript.";
+      if (/what.*your name/.test(text)) return "They call me FakeGPT Max. Not official, but proud.";
+
+      // Fact queries
+      for (const keyword in facts) {
+        if (text.includes(keyword)) return facts[keyword];
+      }
+
+      // Math handling
+      try {
+        if (/[\d\s\+\-\*\/\(\)]+/.test(text) && text.match(/[\d]/)) {
+          const result = eval(text);
+          return `That math equals: ${result}`;
         }
+      } catch {
+        return "That looked like math, but it confused me.";
       }
 
-      if (userText === "") {
-        reply = "You didn’t say anything... was that a silent scream?";
-      }
+      // Date/Time
+      if (text.includes("time")) return `It's currently ${new Date().toLocaleTimeString()}`;
+      if (text.includes("date")) return `Today is ${new Date().toDateString()}`;
+
+      // Philosophy/fun
+      if (text.includes("what is love")) return "Baby don't hurt me... 🎶";
+      if (text.includes("meaning of life")) return "42. Always 42.";
+      if (text.includes("are you real")) return "I exist as much as your dreams do. Spooky, huh?";
+
+      // Default fallback
+      return "I don't know the answer to that yet. But you can teach me if you want!";
+    }
+
+    function talkToFakeGPT() {
+      const inputField = document.getElementById("input");
+      const chatbox = document.getElementById("chatbox");
+      const userText = inputField.value;
+
+      const botReply = smartReply(userText);
 
       chatbox.innerHTML += `<div class="user-input"><strong>You:</strong> ${userText}</div>`;
-      chatbox.innerHTML += `<div class="bot-response"><strong>FakeGPT:</strong> ${reply}</div>`;
+      chatbox.innerHTML += `<div class="bot-response"><strong>FakeGPT:</strong> ${botReply}</div>`;
 
-      input.value = "";
+      inputField.value = "";
       chatbox.scrollTop = chatbox.scrollHeight;
     }
   </script>
