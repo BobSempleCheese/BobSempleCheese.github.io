@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ChatGTP - Totally Not AI</title>
+  <style>
+    body {
+      background: lime;
+      font-family: Comic Sans MS, cursive;
+      color: yellow;
+      margin: 0;
+      padding: 0;
+    }
+    #chatbox {
+      border: 10px dashed pink;
+      height: 300px;
+      overflow-y: scroll;
+      padding: 10px;
+      background-color: #ff00ff;
+    }
+    #input {
+      width: 99%;
+      padding: 20px;
+      font-size: 32px;
+      background-color: black;
+      color: green;
+    }
+    button {
+      font-size: 40px;
+      padding: 20px;
+      background: red;
+      color: white;
+      border: 5px solid orange;
+      cursor: crosshair;
+    }
+    .bot-response {
+      background: blue;
+      padding: 5px;
+      margin: 5px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1 style="text-align:center; background: black; color: red;">Welcome to ChattGTP 🤖</h1>
+  <div id="chatbox">Say something weird...</div>
+  <input type="text" id="input" placeholder="Type anything... literally anything">
+  <button onclick="talkToFakeGPT()">Send to AI</button>
+
+  <script>
+    function talkToFakeGPT() {
+      const input = document.getElementById('input');
+      const chatbox = document.getElementById('chatbox');
+      const userText = input.value;
+
+      // Bad response logic
+      const responses = [
+        "Interesting... I guess?",
+        "Error 404: Brain not found",
+        "I am not sure, try Bing",
+        "Hmmmm... 🐢",
+        "Can you repeat that but louder?",
+        "Did you mean: 'asparagus'?",
+        "01001000 01100101 01101100 01110000"
+      ];
+
+      const reply = responses[Math.floor(Math.random() * responses.length)];
+
+      chatbox.innerHTML += `<div><strong>You:</strong> ${userText}</div>`;
+      chatbox.innerHTML += `<div class="bot-response"><strong>FakeGPT:</strong> ${reply}</div>`;
+
+      input.value = "";
+      chatbox.scrollTop = chatbox.scrollHeight;
+    }
+  </script>
+</body>
+</html>
