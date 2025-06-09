@@ -84,12 +84,13 @@
     <p><strong>Chips:</strong> <span id="chip-count">1000</span></p>
     <div class="betting">
       <strong>Place Bet (click multiple times to add):</strong><br>
-      <button onclick="placeBet(5)">+5</button>
-      <button onclick="placeBet(10)">+10</button>
-      <button onclick="placeBet(50)">+50</button>
-      <button onclick="placeBet(100)">+100</button>
-      <button onclick="placeBet(1000)">+1000</button>
+      <button onclick="addToBet(5)">+5</button>
+      <button onclick="addToBet(10)">+10</button>
+      <button onclick="addToBet(50)">+50</button>
+      <button onclick="addToBet(100)">+100</button>
+      <button onclick="addToBet(1000)">+1000</button>
       <p>Current Bet: <span id="current-bet">0</span></p>
+      <button onclick="startGame()">Confirm Bet & Deal</button>
     </div>
 
     <div class="hand">
@@ -111,7 +112,6 @@
     </div>
 
     <div class="buttons">
-      <button onclick="startGame()">Start Game</button>
       <button onclick="hit()">Hit</button>
       <button onclick="stand()">Stand</button>
       <button id="split-button" onclick="splitHand()" style="display:none;">Split</button>
@@ -123,24 +123,16 @@
 </div>
 
 <script>
-let deck = [];
-let dealerHand = [];
-let playerHands = [[]];
-let activeHand = 0;
-let chips = 1000;
-let currentBet = 0;
-let splitActive = false;
+let deck = [], dealerHand = [], playerHands = [[]];
+let activeHand = 0, chips = 1000, currentBet = 0, splitActive = false;
+let gameStarted = false;
 
 const suits = ['♠', '♥', '♦', '♣'];
 const ranks = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
 
 function createDeck() {
   deck = [];
-  for (let suit of suits) {
-    for (let rank of ranks) {
-      deck.push({ suit, rank });
-    }
-  }
+  for (let s of suits) for (let r of ranks) deck.push({suit: s, rank: r});
   deck.sort(() => Math.random() - 0.5);
 }
 
@@ -151,23 +143,19 @@ function getValue(card) {
 }
 
 function getHandValue(hand) {
-  let value = 0, aces = 0;
+  let v = 0, aces = 0;
   for (let c of hand) {
-    value += getValue(c);
+    v += getValue(c);
     if (c.rank === 'A') aces++;
   }
-  while (value > 21 && aces > 0) {
-    value -= 10;
-    aces--;
-  }
-  return value;
+  while (v > 21 && aces--) v -= 10;
+  return v;
 }
 
 function updateUI(hideDealer = true) {
   document.getElementById('chip-count').textContent = chips;
   document.getElementById('current-bet').textContent = currentBet;
   document.getElementById('reset-button').style.display = chips <= 0 ? 'inline-block' : 'none';
-
   document.getElementById('dealer-hand').textContent = hideDealer
     ? '[Hidden] ' + dealerHand.slice(1).map(c => c.rank + c.suit).join(' ')
     : dealerHand.map(c => c.rank + c.suit).join(' ');
@@ -177,63 +165,55 @@ function updateUI(hideDealer = true) {
     document.getElementById(`player-hand-${i}`).textContent = hand.map(c => c.rank + c.suit).join(' ');
     document.getElementById(`player-total-${i}`).textContent = `Total: ${getHandValue(hand)}`;
     document.getElementById(`hand-${i}`).style.display = 'block';
-    document.getElementById(`hand-title-${i}`).textContent =
-      splitActive ? `Your Hand ${i + 1}` : 'Your Hand';
+    document.getElementById(`hand-title-${i}`).textContent = splitActive ? `Your Hand ${i + 1}` : 'Your Hand';
   });
-
   document.getElementById('hand-1').style.display = splitActive ? 'block' : 'none';
-
-  const canSplit = (
-    playerHands.length === 1 &&
-    playerHands[0].length === 2 &&
-    getValue(playerHands[0][0]) === getValue(playerHands[0][1]) &&
-    chips >= currentBet
-  );
-  document.getElementById('split-button').style.display = canSplit ? 'inline-block' : 'none';
+  document.getElementById('split-button').style.display = canSplit() ? 'inline-block' : 'none';
 }
 
-function placeBet(amount) {
+function canSplit() {
+  return playerHands.length === 1 &&
+    playerHands[0].length === 2 &&
+    getValue(playerHands[0][0]) === getValue(playerHands[0][1]) &&
+    chips >= currentBet && gameStarted;
+}
+
+function addToBet(amount) {
+  if (gameStarted) return;
   if (chips >= amount) {
-    currentBet += amount;
     chips -= amount;
+    currentBet += amount;
+    document.getElementById('message').textContent = `Added ${amount} to bet.`;
     updateUI();
-    document.getElementById('message').textContent = `Bet increased: +${amount}`;
   } else {
     document.getElementById('message').textContent = `Not enough chips.`;
   }
 }
 
 function startGame() {
-  if (currentBet === 0) {
-    document.getElementById('message').textContent = 'Place a bet first.';
-    return;
-  }
-
+  if (currentBet <= 0) return alert('Place a bet first!');
   createDeck();
   dealerHand = [deck.pop(), deck.pop()];
   playerHands = [[deck.pop(), deck.pop()]];
   activeHand = 0;
   splitActive = false;
-
-  updateUI(true);
+  gameStarted = true;
   document.getElementById('message').textContent = '';
+  updateUI(true);
 }
 
 function hit() {
-  if (!playerHands[activeHand]) return;
+  if (!gameStarted) return;
   playerHands[activeHand].push(deck.pop());
   updateUI(true);
-
   if (getHandValue(playerHands[activeHand]) > 21) {
-    if (activeHand === 0 && splitActive) {
-      activeHand = 1;
-    } else {
-      endGame();
-    }
+    if (splitActive && activeHand === 0) activeHand = 1;
+    else dealerTurn();
   }
 }
 
 function stand() {
+  if (!gameStarted) return;
   if (splitActive && activeHand === 0) {
     activeHand = 1;
     updateUI(true);
@@ -243,13 +223,9 @@ function stand() {
 }
 
 function splitHand() {
-  if (chips < currentBet || playerHands.length > 1) return;
-
-  const card = playerHands[0][0];
-  playerHands = [
-    [card, deck.pop()],
-    [playerHands[0][1], deck.pop()]
-  ];
+  if (!canSplit()) return;
+  let c = playerHands[0];
+  playerHands = [[c[0], deck.pop()], [c[1], deck.pop()]];
   chips -= currentBet;
   splitActive = true;
   activeHand = 0;
@@ -257,44 +233,38 @@ function splitHand() {
 }
 
 function dealerTurn() {
-  while (getHandValue(dealerHand) < 17) {
-    dealerHand.push(deck.pop());
-  }
+  while (getHandValue(dealerHand) < 17) dealerHand.push(deck.pop());
   endGame();
 }
 
 function endGame() {
-  updateUI(false);
-  const dealerValue = getHandValue(dealerHand);
-  let message = '';
-
-  playerHands.forEach((hand, i) => {
-    const value = getHandValue(hand);
-    if (value > 21) {
-      message += `Hand ${i + 1}: Bust. `;
-    } else if (dealerValue > 21 || value > dealerValue) {
-      message += `Hand ${i + 1}: You win! `;
+  let dealerVal = getHandValue(dealerHand);
+  let msg = '';
+  for (let i = 0; i < playerHands.length; i++) {
+    let val = getHandValue(playerHands[i]);
+    if (val > 21) msg += `Hand ${i + 1}: Bust. `;
+    else if (dealerVal > 21 || val > dealerVal) {
+      msg += `Hand ${i + 1}: Win! `;
       chips += currentBet * 2;
-    } else if (value === dealerValue) {
-      message += `Hand ${i + 1}: Push. `;
+    } else if (val === dealerVal) {
+      msg += `Hand ${i + 1}: Push. `;
       chips += currentBet;
-    } else {
-      message += `Hand ${i + 1}: Dealer wins. `;
-    }
-  });
-
+    } else msg += `Hand ${i + 1}: Lose. `;
+  }
   currentBet = 0;
-  document.getElementById('message').textContent = message;
+  gameStarted = false;
   updateUI(false);
+  document.getElementById('message').textContent = msg;
 }
 
 function resetGame() {
   chips = 1000;
   currentBet = 0;
-  dealerHand = [];
   playerHands = [[]];
-  splitActive = false;
+  dealerHand = [];
   activeHand = 0;
+  splitActive = false;
+  gameStarted = false;
   document.getElementById('message').textContent = '';
   updateUI();
 }
