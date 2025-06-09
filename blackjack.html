@@ -61,6 +61,11 @@
       margin-top: 20px;
       background: #800;
     }
+
+    .total {
+      font-style: italic;
+      margin-top: 4px;
+    }
   </style>
 </head>
 <body>
@@ -78,19 +83,32 @@
     <h2>Blackjack</h2>
     <p><strong>Chips:</strong> <span id="chip-count">1000</span></p>
     <div class="betting">
-      <strong>Place Bet:</strong><br>
-      <button onclick="placeBet(5)">5</button>
-      <button onclick="placeBet(10)">10</button>
-      <button onclick="placeBet(50)">50</button>
-      <button onclick="placeBet(100)">100</button>
-      <button onclick="placeBet(1000)">1000</button>
+      <strong>Place Bet (click multiple times to add):</strong><br>
+      <button onclick="placeBet(5)">+5</button>
+      <button onclick="placeBet(10)">+10</button>
+      <button onclick="placeBet(50)">+50</button>
+      <button onclick="placeBet(100)">+100</button>
+      <button onclick="placeBet(1000)">+1000</button>
       <p>Current Bet: <span id="current-bet">0</span></p>
     </div>
 
-    <div class="hand"><strong>Dealer's Hand:</strong> <div id="dealer-hand"></div></div>
+    <div class="hand">
+      <strong>Dealer's Hand:</strong>
+      <div id="dealer-hand"></div>
+      <div class="total" id="dealer-total"></div>
+    </div>
 
-    <div class="hand"><strong>Your Hand 1:</strong> <div id="player-hand-0"></div></div>
-    <div class="hand" id="split-hand-container" style="display:none;"><strong>Your Hand 2:</strong> <div id="player-hand-1"></div></div>
+    <div class="hand" id="hand-0">
+      <strong id="hand-title-0">Your Hand</strong>
+      <div id="player-hand-0"></div>
+      <div class="total" id="player-total-0"></div>
+    </div>
+
+    <div class="hand" id="hand-1" style="display:none;">
+      <strong id="hand-title-1">Your Hand 2</strong>
+      <div id="player-hand-1"></div>
+      <div class="total" id="player-total-1"></div>
+    </div>
 
     <div class="buttons">
       <button onclick="startGame()">Start Game</button>
@@ -149,16 +167,21 @@ function updateUI(hideDealer = true) {
   document.getElementById('chip-count').textContent = chips;
   document.getElementById('current-bet').textContent = currentBet;
   document.getElementById('reset-button').style.display = chips <= 0 ? 'inline-block' : 'none';
-  
+
   document.getElementById('dealer-hand').textContent = hideDealer
     ? '[Hidden] ' + dealerHand.slice(1).map(c => c.rank + c.suit).join(' ')
     : dealerHand.map(c => c.rank + c.suit).join(' ');
+  document.getElementById('dealer-total').textContent = hideDealer ? '' : `Total: ${getHandValue(dealerHand)}`;
 
   playerHands.forEach((hand, i) => {
     document.getElementById(`player-hand-${i}`).textContent = hand.map(c => c.rank + c.suit).join(' ');
+    document.getElementById(`player-total-${i}`).textContent = `Total: ${getHandValue(hand)}`;
+    document.getElementById(`hand-${i}`).style.display = 'block';
+    document.getElementById(`hand-title-${i}`).textContent =
+      splitActive ? `Your Hand ${i + 1}` : 'Your Hand';
   });
 
-  document.getElementById('split-hand-container').style.display = splitActive ? 'block' : 'none';
+  document.getElementById('hand-1').style.display = splitActive ? 'block' : 'none';
 
   const canSplit = (
     playerHands.length === 1 &&
@@ -170,11 +193,13 @@ function updateUI(hideDealer = true) {
 }
 
 function placeBet(amount) {
-  if (currentBet === 0 && chips >= amount) {
-    currentBet = amount;
+  if (chips >= amount) {
+    currentBet += amount;
     chips -= amount;
     updateUI();
-    document.getElementById('message').textContent = `Bet placed: ${amount}`;
+    document.getElementById('message').textContent = `Bet increased: +${amount}`;
+  } else {
+    document.getElementById('message').textContent = `Not enough chips.`;
   }
 }
 
@@ -246,15 +271,15 @@ function endGame() {
   playerHands.forEach((hand, i) => {
     const value = getHandValue(hand);
     if (value > 21) {
-      message += `Hand ${i+1}: Bust! `;
+      message += `Hand ${i + 1}: Bust. `;
     } else if (dealerValue > 21 || value > dealerValue) {
-      message += `Hand ${i+1}: You win! `;
+      message += `Hand ${i + 1}: You win! `;
       chips += currentBet * 2;
     } else if (value === dealerValue) {
-      message += `Hand ${i+1}: Push. `;
+      message += `Hand ${i + 1}: Push. `;
       chips += currentBet;
     } else {
-      message += `Hand ${i+1}: Dealer wins. `;
+      message += `Hand ${i + 1}: Dealer wins. `;
     }
   });
 
@@ -271,9 +296,6 @@ function resetGame() {
   splitActive = false;
   activeHand = 0;
   document.getElementById('message').textContent = '';
-  document.getElementById('player-hand-0').textContent = '';
-  document.getElementById('player-hand-1').textContent = '';
-  document.getElementById('dealer-hand').textContent = '';
   updateUI();
 }
 </script>
