@@ -2,70 +2,79 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>ChatGTP - Totally Not AI</title>
+  <title>ChattGTP - Smartish Bot</title>
   <style>
     body {
-      background: lime;
-      font-family: Comic Sans MS, cursive;
-      color: yellow;
+      background: lemonchiffon;
+      font-family: Papyrus, Comic Sans MS, cursive;
       margin: 0;
       padding: 0;
+      color: darkblue;
     }
     #chatbox {
-      border: 10px dashed pink;
+      border: 8px dotted purple;
       height: 300px;
       overflow-y: scroll;
       padding: 10px;
-      background-color: #ff00ff;
+      background-color: lavender;
+      font-size: 18px;
     }
     #input {
-      width: 99%;
+      width: 98%;
       padding: 20px;
-      font-size: 32px;
-      background-color: black;
-      color: green;
+      font-size: 18px;
+      background-color: #fdf6e3;
+      color: #333;
+      border: 2px solid hotpink;
     }
     button {
-      font-size: 40px;
-      padding: 20px;
-      background: red;
+      font-size: 24px;
+      padding: 15px;
+      margin: 10px;
+      background: tomato;
       color: white;
-      border: 5px solid orange;
-      cursor: crosshair;
+      border: 4px ridge chartreuse;
+      cursor: pointer;
     }
     .bot-response {
-      background: blue;
-      padding: 5px;
-      margin: 5px 0;
+      background: #c0c0ff;
+      padding: 6px;
+      margin: 6px 0;
+      border-left: 4px solid blue;
     }
   </style>
 </head>
 <body>
-  <h1 style="text-align:center; background: black; color: red;">Welcome to ChattGTP 🤖</h1>
-  <div id="chatbox">Say something weird...</div>
-  <input type="text" id="input" placeholder="Type anything... literally anything">
-  <button onclick="talkToFakeGPT()">Send to AI</button>
+  <h1 style="text-align:center; background: black; color: lime;">ChattGTP 🤖: Slightly Smarter</h1>
+  <div id="chatbox">Start chatting with your confused bot!</div>
+  <input type="text" id="input" placeholder="Ask something like a human">
+  <button onclick="talkToFakeGPT()">Talk!</button>
 
   <script>
     function talkToFakeGPT() {
       const input = document.getElementById('input');
       const chatbox = document.getElementById('chatbox');
-      const userText = input.value;
+      const userText = input.value.toLowerCase();
 
-      // Bad response logic
-      const responses = [
-        "Interesting... I guess?",
-        "Error 404: Brain not found",
-        "I am not sure, try Bing",
-        "Hmmmm... 🐢",
-        "Can you repeat that but louder?",
-        "Did you mean: 'asparagus'?",
-        "01001000 01100101 01101100 01110000"
-      ];
+      let reply = "";
 
-      const reply = responses[Math.floor(Math.random() * responses.length)];
+      if (userText.includes("hello") || userText.includes("hi")) {
+        reply = "Hey there, strange human!";
+      } else if (userText.includes("how are you")) {
+        reply = "I am functioning within acceptable parameters... maybe.";
+      } else if (userText.includes("what is your name")) {
+        reply = "They call me ChattGTP, totally original.";
+      } else if (userText.includes("joke")) {
+        reply = "Why did the computer get cold? It left its Windows open.";
+      } else if (userText.includes("bye")) {
+        reply = "Goodbye! I’ll forget everything we talked about.";
+      } else if (userText.trim() === "") {
+        reply = "Say something. I dare you.";
+      } else {
+        reply = "I have no idea what you just said. But it sounds important!";
+      }
 
-      chatbox.innerHTML += `<div><strong>You:</strong> ${userText}</div>`;
+      chatbox.innerHTML += `<div><strong>You:</strong> ${input.value}</div>`;
       chatbox.innerHTML += `<div class="bot-response"><strong>FakeGPT:</strong> ${reply}</div>`;
 
       input.value = "";
