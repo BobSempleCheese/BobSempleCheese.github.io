@@ -41,6 +41,12 @@
       margin-bottom: 15px;
     }
 
+    .active-hand {
+      border: 2px solid yellow;
+      padding: 10px;
+      border-radius: 5px;
+    }
+
     .buttons button, .betting button {
       background: #333;
       color: white;
@@ -88,6 +94,7 @@
       <button onclick="addToBet(10)">+10</button>
       <button onclick="addToBet(50)">+50</button>
       <button onclick="addToBet(100)">+100</button>
+      <button onclick="addToBet(500)">+500</button>
       <button onclick="addToBet(1000)">+1000</button>
       <p>Current Bet: <span id="current-bet">0</span></p>
       <button onclick="startGame()">Confirm Bet & Deal</button>
@@ -162,10 +169,13 @@ function updateUI(hideDealer = true) {
   document.getElementById('dealer-total').textContent = hideDealer ? '' : `Total: ${getHandValue(dealerHand)}`;
 
   playerHands.forEach((hand, i) => {
+    const handDiv = document.getElementById(`hand-${i}`);
+    const handTitle = document.getElementById(`hand-title-${i}`);
     document.getElementById(`player-hand-${i}`).textContent = hand.map(c => c.rank + c.suit).join(' ');
     document.getElementById(`player-total-${i}`).textContent = `Total: ${getHandValue(hand)}`;
-    document.getElementById(`hand-${i}`).style.display = 'block';
-    document.getElementById(`hand-title-${i}`).textContent = splitActive ? `Your Hand ${i + 1}` : 'Your Hand';
+    handDiv.style.display = 'block';
+    handTitle.textContent = splitActive ? `Your Hand ${i + 1}` : 'Your Hand';
+    handDiv.classList.toggle('active-hand', i === activeHand);
   });
   document.getElementById('hand-1').style.display = splitActive ? 'block' : 'none';
   document.getElementById('split-button').style.display = canSplit() ? 'inline-block' : 'none';
