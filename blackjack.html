@@ -27,7 +27,7 @@
 
     .container {
       padding: 20px;
-      max-width: 800px;
+      max-width: 900px;
       margin: auto;
     }
 
@@ -38,7 +38,7 @@
     }
 
     .hand {
-      margin-bottom: 20px;
+      margin-bottom: 15px;
     }
 
     .buttons button, .betting button {
@@ -87,19 +87,16 @@
       <p>Current Bet: <span id="current-bet">0</span></p>
     </div>
 
-    <div class="hand">
-      <strong>Dealer's Hand:</strong>
-      <div id="dealer-hand"></div>
-    </div>
-    <div class="hand">
-      <strong>Your Hand:</strong>
-      <div id="player-hand"></div>
-    </div>
+    <div class="hand"><strong>Dealer's Hand:</strong> <div id="dealer-hand"></div></div>
+
+    <div class="hand"><strong>Your Hand 1:</strong> <div id="player-hand-0"></div></div>
+    <div class="hand" id="split-hand-container" style="display:none;"><strong>Your Hand 2:</strong> <div id="player-hand-1"></div></div>
 
     <div class="buttons">
       <button onclick="startGame()">Start Game</button>
       <button onclick="hit()">Hit</button>
       <button onclick="stand()">Stand</button>
+      <button id="split-button" onclick="splitHand()" style="display:none;">Split</button>
     </div>
 
     <p id="message"></p>
@@ -108,12 +105,16 @@
 </div>
 
 <script>
-let deck, playerHand, dealerHand;
+let deck = [];
+let dealerHand = [];
+let playerHands = [[]];
+let activeHand = 0;
 let chips = 1000;
 let currentBet = 0;
+let splitActive = false;
 
 const suits = ['♠', '♥', '♦', '♣'];
-const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+const ranks = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
 
 function createDeck() {
   deck = [];
@@ -126,17 +127,16 @@ function createDeck() {
 }
 
 function getValue(card) {
-  if (['J', 'Q', 'K'].includes(card.rank)) return 10;
+  if (['J','Q','K'].includes(card.rank)) return 10;
   if (card.rank === 'A') return 11;
   return parseInt(card.rank);
 }
 
 function getHandValue(hand) {
-  let value = 0;
-  let aces = 0;
-  for (let card of hand) {
-    value += getValue(card);
-    if (card.rank === 'A') aces++;
+  let value = 0, aces = 0;
+  for (let c of hand) {
+    value += getValue(c);
+    if (c.rank === 'A') aces++;
   }
   while (value > 21 && aces > 0) {
     value -= 10;
@@ -145,59 +145,93 @@ function getHandValue(hand) {
   return value;
 }
 
-function renderHands(hideDealerCard = false) {
-  document.getElementById('player-hand').textContent = playerHand.map(c => c.rank + c.suit).join(' ');
-  if (hideDealerCard) {
-    document.getElementById('dealer-hand').textContent = '[Hidden] ' + dealerHand.slice(1).map(c => c.rank + c.suit).join(' ');
-  } else {
-    document.getElementById('dealer-hand').textContent = dealerHand.map(c => c.rank + c.suit).join(' ');
-  }
-}
-
-function updateUI() {
+function updateUI(hideDealer = true) {
   document.getElementById('chip-count').textContent = chips;
   document.getElementById('current-bet').textContent = currentBet;
   document.getElementById('reset-button').style.display = chips <= 0 ? 'inline-block' : 'none';
+  
+  document.getElementById('dealer-hand').textContent = hideDealer
+    ? '[Hidden] ' + dealerHand.slice(1).map(c => c.rank + c.suit).join(' ')
+    : dealerHand.map(c => c.rank + c.suit).join(' ');
+
+  playerHands.forEach((hand, i) => {
+    document.getElementById(`player-hand-${i}`).textContent = hand.map(c => c.rank + c.suit).join(' ');
+  });
+
+  document.getElementById('split-hand-container').style.display = splitActive ? 'block' : 'none';
+
+  const canSplit = (
+    playerHands.length === 1 &&
+    playerHands[0].length === 2 &&
+    getValue(playerHands[0][0]) === getValue(playerHands[0][1]) &&
+    chips >= currentBet
+  );
+  document.getElementById('split-button').style.display = canSplit ? 'inline-block' : 'none';
 }
 
 function placeBet(amount) {
-  if (chips >= amount && currentBet === 0) {
+  if (currentBet === 0 && chips >= amount) {
     currentBet = amount;
     chips -= amount;
     updateUI();
-    document.getElementById('message').textContent = `You placed a bet of ${amount} chips. Click "Start Game" to begin.`;
-  } else if (currentBet > 0) {
-    document.getElementById('message').textContent = "You already placed a bet.";
-  } else {
-    document.getElementById('message').textContent = "Not enough chips to place that bet.";
+    document.getElementById('message').textContent = `Bet placed: ${amount}`;
   }
 }
 
 function startGame() {
-  if (currentBet <= 0) {
-    document.getElementById('message').textContent = "Place a bet before starting.";
+  if (currentBet === 0) {
+    document.getElementById('message').textContent = 'Place a bet first.';
     return;
   }
-  createDeck();
-  playerHand = [deck.pop(), deck.pop()];
-  dealerHand = [deck.pop(), deck.pop()];
-  renderHands(true);
-  document.getElementById('message').textContent = '';
 
-  if (getHandValue(playerHand) === 21) {
-    stand();
-  }
+  createDeck();
+  dealerHand = [deck.pop(), deck.pop()];
+  playerHands = [[deck.pop(), deck.pop()]];
+  activeHand = 0;
+  splitActive = false;
+
+  updateUI(true);
+  document.getElementById('message').textContent = '';
 }
 
 function hit() {
-  if (!playerHand || playerHand.length === 0) return;
-  playerHand.push(deck.pop());
-  renderHands(true);
-  if (getHandValue(playerHand) > 21) endGame();
+  if (!playerHands[activeHand]) return;
+  playerHands[activeHand].push(deck.pop());
+  updateUI(true);
+
+  if (getHandValue(playerHands[activeHand]) > 21) {
+    if (activeHand === 0 && splitActive) {
+      activeHand = 1;
+    } else {
+      endGame();
+    }
+  }
 }
 
 function stand() {
-  if (!dealerHand || dealerHand.length === 0) return;
+  if (splitActive && activeHand === 0) {
+    activeHand = 1;
+    updateUI(true);
+    return;
+  }
+  dealerTurn();
+}
+
+function splitHand() {
+  if (chips < currentBet || playerHands.length > 1) return;
+
+  const card = playerHands[0][0];
+  playerHands = [
+    [card, deck.pop()],
+    [playerHands[0][1], deck.pop()]
+  ];
+  chips -= currentBet;
+  splitActive = true;
+  activeHand = 0;
+  updateUI(true);
+}
+
+function dealerTurn() {
   while (getHandValue(dealerHand) < 17) {
     dealerHand.push(deck.pop());
   }
@@ -205,39 +239,41 @@ function stand() {
 }
 
 function endGame() {
-  renderHands();
-  const playerValue = getHandValue(playerHand);
+  updateUI(false);
   const dealerValue = getHandValue(dealerHand);
   let message = '';
 
-  if (playerValue > 21) {
-    message = 'You busted! Dealer wins.';
-  } else if (dealerValue > 21) {
-    message = 'Dealer busted! You win!';
-    chips += currentBet * 2;
-  } else if (playerValue > dealerValue) {
-    message = 'You win!';
-    chips += currentBet * 2;
-  } else if (dealerValue > playerValue) {
-    message = 'Dealer wins!';
-  } else {
-    message = "It's a tie!";
-    chips += currentBet;
-  }
+  playerHands.forEach((hand, i) => {
+    const value = getHandValue(hand);
+    if (value > 21) {
+      message += `Hand ${i+1}: Bust! `;
+    } else if (dealerValue > 21 || value > dealerValue) {
+      message += `Hand ${i+1}: You win! `;
+      chips += currentBet * 2;
+    } else if (value === dealerValue) {
+      message += `Hand ${i+1}: Push. `;
+      chips += currentBet;
+    } else {
+      message += `Hand ${i+1}: Dealer wins. `;
+    }
+  });
 
   currentBet = 0;
   document.getElementById('message').textContent = message;
-  updateUI();
+  updateUI(false);
 }
 
 function resetGame() {
   chips = 1000;
   currentBet = 0;
-  playerHand = [];
   dealerHand = [];
-  document.getElementById('player-hand').textContent = '';
-  document.getElementById('dealer-hand').textContent = '';
+  playerHands = [[]];
+  splitActive = false;
+  activeHand = 0;
   document.getElementById('message').textContent = '';
+  document.getElementById('player-hand-0').textContent = '';
+  document.getElementById('player-hand-1').textContent = '';
+  document.getElementById('dealer-hand').textContent = '';
   updateUI();
 }
 </script>
