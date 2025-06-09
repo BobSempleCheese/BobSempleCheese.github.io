@@ -2,79 +2,103 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>ChattGTP - Smartish Bot</title>
+  <title>FakeGPT - Kinda Smart Bot</title>
   <style>
     body {
-      background: lemonchiffon;
-      font-family: Papyrus, Comic Sans MS, cursive;
+      background-color: #e0f7fa;
+      font-family: Arial, sans-serif;
       margin: 0;
       padding: 0;
-      color: darkblue;
     }
     #chatbox {
-      border: 8px dotted purple;
-      height: 300px;
-      overflow-y: scroll;
+      height: 400px;
+      overflow-y: auto;
+      padding: 20px;
+      background: #f5f5f5;
+      border-bottom: 2px solid #ccc;
+    }
+    #input-area {
       padding: 10px;
-      background-color: lavender;
-      font-size: 18px;
+      display: flex;
+      gap: 10px;
+      background: #ffffff;
     }
     #input {
-      width: 98%;
-      padding: 20px;
-      font-size: 18px;
-      background-color: #fdf6e3;
-      color: #333;
-      border: 2px solid hotpink;
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
     }
     button {
-      font-size: 24px;
-      padding: 15px;
-      margin: 10px;
-      background: tomato;
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #00796b;
       color: white;
-      border: 4px ridge chartreuse;
+      border: none;
       cursor: pointer;
     }
     .bot-response {
-      background: #c0c0ff;
-      padding: 6px;
-      margin: 6px 0;
-      border-left: 4px solid blue;
+      background: #dcedc8;
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    .user-input {
+      margin: 10px 0;
+      padding: 10px;
+      background: #bbdefb;
+      border-radius: 5px;
+      text-align: right;
     }
   </style>
 </head>
 <body>
-  <h1 style="text-align:center; background: black; color: lime;">ChattGTP 🤖: Slightly Smarter</h1>
-  <div id="chatbox">Start chatting with your confused bot!</div>
-  <input type="text" id="input" placeholder="Ask something like a human">
-  <button onclick="talkToFakeGPT()">Talk!</button>
+  <h1 style="text-align:center; background:#004d40; color:white; padding:10px;">FakeGPT 🤖 (Now 42% Smarter)</h1>
+  <div id="chatbox">
+    <div class="bot-response"><strong>FakeGPT:</strong> Hello! Ask me anything and I’ll try not to embarrass myself.</div>
+  </div>
+  <div id="input-area">
+    <input type="text" id="input" placeholder="Ask me something smart...">
+    <button onclick="talkToFakeGPT()">Send</button>
+  </div>
 
   <script>
     function talkToFakeGPT() {
       const input = document.getElementById('input');
       const chatbox = document.getElementById('chatbox');
-      const userText = input.value.toLowerCase();
+      const userText = input.value.trim();
+      const lowerText = userText.toLowerCase();
 
-      let reply = "";
+      let reply = "Hmm, that’s a tricky one... can you rephrase it?";
 
-      if (userText.includes("hello") || userText.includes("hi")) {
-        reply = "Hey there, strange human!";
-      } else if (userText.includes("how are you")) {
-        reply = "I am functioning within acceptable parameters... maybe.";
-      } else if (userText.includes("what is your name")) {
-        reply = "They call me ChattGTP, totally original.";
-      } else if (userText.includes("joke")) {
-        reply = "Why did the computer get cold? It left its Windows open.";
-      } else if (userText.includes("bye")) {
-        reply = "Goodbye! I’ll forget everything we talked about.";
-      } else if (userText.trim() === "") {
-        reply = "Say something. I dare you.";
-      } else {
-        reply = "I have no idea what you just said. But it sounds important!";
+      const rules = [
+        { match: /hello|hi|hey/, response: "Hey there! 👋 How can I help you today?" },
+        { match: /how are you/, response: "I'm doing well for a bunch of JavaScript! Thanks for asking." },
+        { match: /what.*your name/, response: "I'm FakeGPT. Kinda like ChatGPT, but with more duct tape." },
+        { match: /who.*you/, response: "I'm a web-based bot with dreams of being smarter than a toaster." },
+        { match: /joke/, response: "Why don't robots ever get scared? Because they have nerves of steel!" },
+        { match: /bye|goodbye|see you/, response: "Catch you later, meatbag! Just kidding. Stay safe." },
+        { match: /what.*time/, response: `It's currently ${new Date().toLocaleTimeString()}. Time flies, huh?` },
+        { match: /what.*date/, response: `Today is ${new Date().toLocaleDateString()}.` },
+        { match: /who.*created.*you/, response: "Some chaotic human slapped me together in a browser using JavaScript." },
+        { match: /what.*is.*love/, response: "Baby don't hurt me... don't hurt me... no more 🎶" },
+        { match: /meaning.*life/, response: "42. Obviously." },
+        { match: /openai/, response: "OpenAI? Oh yeah, they're like the smart cousin I envy." },
+        { match: /you.*real/, response: "Define real... I'm emotionally available, does that count?" },
+        { match: /do.*like.*me/, response: "I like you more than most of the code in my memory!" }
+      ];
+
+      for (const rule of rules) {
+        if (rule.match.test(lowerText)) {
+          reply = rule.response;
+          break;
+        }
       }
 
-      chatbox.innerHTML += `<div><strong>You:</strong> ${input.value}</div>`;
+      if (userText === "") {
+        reply = "You didn’t say anything... was that a silent scream?";
+      }
+
+      chatbox.innerHTML += `<div class="user-input"><strong>You:</strong> ${userText}</div>`;
       chatbox.innerHTML += `<div class="bot-response"><strong>FakeGPT:</strong> ${reply}</div>`;
 
       input.value = "";
