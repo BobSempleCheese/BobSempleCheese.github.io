@@ -184,15 +184,331 @@ function toggleMode(value) {
   if (value === 'light') {
     document.body.classList.add('light-mode');
     document.querySelector('.mode-toggle').value = 'light';
+    document.getElementById('switch-back-message').style.display = 'block';
   } else {
     document.body.classList.remove('light-mode');
     document.querySelector('.mode-toggle').value = 'dark';
+    document.getElementById('switch-back-message').style.display = 'none';
   }
 }
-</script>
 
-<script>
-// (original game script remains unchanged)
+// Blackjack Game Logic
+let chips = 1000;
+let currentBet = 0;
+let deck = [];
+let playerHands = [[]];
+let dealerHand = [];
+let activeHandIndex = 0;
+let inPlay = false;
+let gameOver = false;
+let splitAllowed = false;
+
+function updateChips() {
+  document.getElementById('chip-count').textContent = chips;
+}
+
+function updateBet() {
+  document.getElementById('current-bet').textContent = currentBet;
+}
+
+function addToBet(amount) {
+  if (inPlay || gameOver) return;
+  if (currentBet + amount > chips) return;
+  currentBet += amount;
+  updateBet();
+}
+
+function startGame() {
+  if (inPlay || gameOver) return;
+  if (currentBet < 1) {
+    showMessage("Bet at least 1 chip to play!");
+    return;
+  }
+  chips -= currentBet;
+  updateChips();
+  document.querySelector('.betting').style.display = 'none';
+  document.getElementById('reset-button').style.display = 'none';
+  document.getElementById('message').textContent = '';
+  deck = createDeck();
+  shuffle(deck);
+  playerHands = [ [drawCard(), drawCard()] ];
+  dealerHand = [drawCard(), drawCard()];
+  activeHandIndex = 0;
+  inPlay = true;
+  gameOver = false;
+  splitAllowed = canSplit(playerHands[0]);
+  updateHands();
+  showSplitButton();
+  updateActiveHandHighlight();
+  showMessage("Game started! Your move.");
+  checkInitialBlackjack();
+}
+
+function checkInitialBlackjack() {
+  let playerVal = handValue(playerHands[0]);
+  let dealerVal = handValue([dealerHand[0], dealerHand[1]]);
+  if (playerVal === 21) {
+    inPlay = false;
+    let win = 0;
+    if (dealerVal === 21) {
+      showMessage("Both blackjack! It's a push.");
+      chips += currentBet;
+      win = 0;
+    } else {
+      showMessage("Blackjack! You win 1.5x your bet!");
+      chips += Math.floor(currentBet * 2.5);
+      win = 1.5;
+    }
+    updateChips();
+    document.getElementById('reset-button').style.display = 'block';
+    gameOver = true;
+    updateHands(true);
+  }
+}
+
+function showSplitButton() {
+  let splitBtn = document.getElementById('split-button');
+  if (splitAllowed && playerHands.length === 1 && inPlay && chips >= currentBet) {
+    splitBtn.style.display = 'inline-block';
+  } else {
+    splitBtn.style.display = 'none';
+  }
+}
+
+function canSplit(hand) {
+  return hand.length === 2 && cardValue(hand[0]) === cardValue(hand[1]);
+}
+
+function splitHand() {
+  if (!splitAllowed || !inPlay || playerHands.length !== 1 || chips < currentBet) return;
+  chips -= currentBet;
+  updateChips();
+  playerHands = [
+    [playerHands[0][0], drawCard()],
+    [playerHands[0][1], drawCard()]
+  ];
+  splitAllowed = false;
+  activeHandIndex = 0;
+  showSplitButton();
+  updateHands();
+  updateActiveHandHighlight();
+  showMessage("Hands split! Playing hand 1.");
+}
+
+function hit() {
+  if (!inPlay) return;
+  playerHands[activeHandIndex].push(drawCard());
+  updateHands();
+  let val = handValue(playerHands[activeHandIndex]);
+  if (val > 21) {
+    showMessage("Busted on hand " + (activeHandIndex + 1) + "!");
+    nextHandOrDealer();
+  } else if (val === 21) {
+    showMessage("21! Automatically standing.");
+    nextHandOrDealer();
+  }
+}
+
+function stand() {
+  if (!inPlay) return;
+  nextHandOrDealer();
+}
+
+function nextHandOrDealer() {
+  if (activeHandIndex + 1 < playerHands.length) {
+    activeHandIndex++;
+    updateActiveHandHighlight();
+    showMessage("Now playing hand " + (activeHandIndex + 1) + ".");
+  } else {
+    inPlay = false;
+    dealerTurn();
+  }
+}
+
+function dealerTurn() {
+  updateHands(true);
+  let dealerVal = handValue(dealerHand);
+  while (dealerVal < 17) {
+    dealerHand.push(drawCard());
+    dealerVal = handValue(dealerHand);
+    updateHands(true);
+  }
+  endGame();
+}
+
+function endGame() {
+  let dealerVal = handValue(dealerHand);
+  let messages = [];
+  let winCount = 0;
+  for (let i = 0; i < playerHands.length; i++) {
+    let playerVal = handValue(playerHands[i]);
+    let bet = currentBet;
+    if (playerHands.length === 2) bet = currentBet; // Each hand bets the same
+    if (playerVal > 21) {
+      messages.push("Hand " + (i+1) + ": Busted. Lost " + bet + " chips.");
+    } else if (dealerVal > 21) {
+      messages.push("Hand " + (i+1) + ": Dealer busts! Win " + (bet*2) + " chips.");
+      chips += bet * 2;
+      winCount++;
+    } else if (playerVal > dealerVal) {
+      messages.push("Hand " + (i+1) + ": Win " + (bet*2) + " chips!");
+      chips += bet * 2;
+      winCount++;
+    } else if (playerVal === dealerVal) {
+      messages.push("Hand " + (i+1) + ": Push. Bet returned.");
+      chips += bet;
+    } else {
+      messages.push("Hand " + (i+1) + ": Lost " + bet + " chips.");
+    }
+  }
+  updateChips();
+  showMessage(messages.join('\n'));
+  document.getElementById('reset-button').style.display = 'block';
+  gameOver = true;
+  updateHands(true);
+}
+
+function resetGame() {
+  currentBet = 0;
+  updateBet();
+  playerHands = [[]];
+  dealerHand = [];
+  activeHandIndex = 0;
+  inPlay = false;
+  gameOver = false;
+  splitAllowed = false;
+  document.querySelector('.betting').style.display = 'block';
+  document.getElementById('reset-button').style.display = 'none';
+  document.getElementById('message').textContent = '';
+  updateHands();
+  updateActiveHandHighlight();
+  showSplitButton();
+}
+
+function showMessage(msg) {
+  document.getElementById('message').textContent = msg;
+}
+
+function updateHands(showDealerAll = false) {
+  // Dealer
+  let dealerDiv = document.getElementById('dealer-hand');
+  let dealerTotalDiv = document.getElementById('dealer-total');
+  dealerDiv.innerHTML = '';
+  dealerTotalDiv.textContent = '';
+  if (dealerHand.length === 0) return;
+  let showCards = [];
+  if (inPlay && !showDealerAll) {
+    showCards = [dealerHand[0], "🂠"];
+  } else {
+    showCards = dealerHand;
+    dealerTotalDiv.textContent = "Total: " + handValue(dealerHand);
+  }
+  for (let card of showCards) {
+    dealerDiv.appendChild(renderCard(card));
+  }
+
+  // Player hands
+  for (let i = 0; i < 2; i++) {
+    let handDiv = document.getElementById('player-hand-' + i);
+    let totalDiv = document.getElementById('player-total-' + i);
+    let handWrapper = document.getElementById('hand-' + i);
+    if (playerHands[i]) {
+      handDiv.innerHTML = '';
+      for (let card of playerHands[i]) {
+        handDiv.appendChild(renderCard(card));
+      }
+      totalDiv.textContent = "Total: " + handValue(playerHands[i]);
+      handWrapper.style.display = 'block';
+      document.getElementById('hand-title-' + i).textContent = i === 0 ? 'Your Hand' : 'Your Hand 2';
+    } else {
+      handDiv.innerHTML = '';
+      totalDiv.textContent = '';
+      handWrapper.style.display = 'none';
+    }
+  }
+}
+
+function updateActiveHandHighlight() {
+  for (let i = 0; i < 2; i++) {
+    let handDiv = document.getElementById('hand-' + i);
+    if (i === activeHandIndex && inPlay && playerHands[i]) {
+      handDiv.classList.add('active-hand');
+    } else {
+      handDiv.classList.remove('active-hand');
+    }
+  }
+}
+
+// Card/Deck helpers
+function createDeck() {
+  let suits = ['♠', '♥', '♦', '♣'];
+  let values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+  let deck = [];
+  for (let s of suits) {
+    for (let v of values) {
+      deck.push({suit: s, value: v});
+    }
+  }
+  return deck;
+}
+
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    let j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+
+function drawCard() {
+  if (deck.length < 1) deck = createDeck(), shuffle(deck);
+  return deck.pop();
+}
+
+function cardValue(card) {
+  if (typeof card === "string") return 0; // face down
+  if (card.value === 'A') return 11;
+  if (['K','Q','J'].includes(card.value)) return 10;
+  return parseInt(card.value);
+}
+
+function handValue(hand) {
+  let total = 0;
+  let aces = 0;
+  for (let card of hand) {
+    if (typeof card === "string") continue;
+    total += cardValue(card);
+    if (card.value === 'A') aces++;
+  }
+  while (total > 21 && aces > 0) {
+    total -= 10;
+    aces--;
+  }
+  return total;
+}
+
+function renderCard(card) {
+  let span = document.createElement('span');
+  span.style.display = 'inline-block';
+  span.style.fontSize = '2em';
+  span.style.marginRight = '10px';
+  span.style.width = '40px';
+  span.style.textAlign = 'center';
+  if (typeof card === "string") {
+    span.textContent = card;
+  } else {
+    let color = (card.suit === '♥' || card.suit === '♦') ? '#f44' : '#fff';
+    span.style.color = color;
+    span.textContent = card.value + card.suit;
+  }
+  return span;
+}
+
+// Initial setup
+updateChips();
+updateBet();
+updateHands();
+updateActiveHandHighlight();
+showSplitButton();
 </script>
 
 </body>
